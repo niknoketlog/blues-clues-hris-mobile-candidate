@@ -57,7 +57,6 @@ App runs at `http://localhost:3000`
 
 ---
 
-
 ### 4. Set up the MOBILE ONLY
 
 Open a third terminal:
@@ -75,14 +74,14 @@ SCAN QR CODE USING EXPO GO APP
 
 Create `tribeX-hris-auth-api/.env` based on `.env.example`:
 
-| Variable | Description | Required |
-|---|---|---|
-| `PORT` | Port for the API server (default: `5000`) | No |
-| `SUPABASE_URL` | Your Supabase project URL | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (admin access) | Yes |
-| `SUPABASE_ANON_KEY` | Supabase anon/public key | Yes |
-| `JWT_SECRET` | Secret used to sign JWT tokens | Yes |
-| `CORS_ORIGINS` | Comma-separated allowed origins (production only) | Production |
+| Variable                    | Description                                       | Required   |
+| --------------------------- | ------------------------------------------------- | ---------- |
+| `PORT`                      | Port for the API server (default: `5000`)         | No         |
+| `SUPABASE_URL`              | Your Supabase project URL                         | Yes        |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (admin access)          | Yes        |
+| `SUPABASE_ANON_KEY`         | Supabase anon/public key                          | Yes        |
+| `JWT_SECRET`                | Secret used to sign JWT tokens                    | Yes        |
+| `CORS_ORIGINS`              | Comma-separated allowed origins (production only) | Production |
 
 > **Never commit `.env` files.** They are in `.gitignore`. Ask a team member for the values.
 
@@ -115,15 +114,16 @@ git rebase origin/master
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):
 
-| Prefix | When to use |
-|---|---|
-| `feat:` | Adding new functionality |
-| `fix:` | Fixing a bug |
+| Prefix      | When to use                                |
+| ----------- | ------------------------------------------ |
+| `feat:`     | Adding new functionality                   |
+| `fix:`      | Fixing a bug                               |
 | `refactor:` | Restructuring code without behavior change |
-| `chore:` | Deps, config, tooling changes |
-| `test:` | Adding or updating tests |
+| `chore:`    | Deps, config, tooling changes              |
+| `test:`     | Adding or updating tests                   |
 
 **Examples from this repo:**
+
 ```
 feat: make all role dashboards accessible
 fix: logout flow — call logoutApi from Sidebar
@@ -149,24 +149,24 @@ chore: remove .claude folder from tracking
 
 ### Backend (`tribeX-hris-auth-api/`)
 
-| Command | What it does |
-|---|---|
-| `npm run start:dev` | Dev server with hot reload |
-| `npm run start:prod` | Production server |
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm run lint` | Lint and auto-fix |
-| `npm run test` | Run unit tests |
-| `npm run test:cov` | Unit tests with coverage report |
-| `npm run test:e2e` | End-to-end tests |
+| Command              | What it does                    |
+| -------------------- | ------------------------------- |
+| `npm run start:dev`  | Dev server with hot reload      |
+| `npm run start:prod` | Production server               |
+| `npm run build`      | Compile TypeScript to `dist/`   |
+| `npm run lint`       | Lint and auto-fix               |
+| `npm run test`       | Run unit tests                  |
+| `npm run test:cov`   | Unit tests with coverage report |
+| `npm run test:e2e`   | End-to-end tests                |
 
 ### Frontend (`frontend/manager-dashboard/`)
 
-| Command | What it does |
-|---|---|
-| `npm run dev` | Dev server with hot reload |
-| `npm run build` | Production build |
+| Command         | What it does               |
+| --------------- | -------------------------- |
+| `npm run dev`   | Dev server with hot reload |
+| `npm run build` | Production build           |
 | `npm run start` | Serve the production build |
-| `npm run lint` | Lint check |
+| `npm run lint`  | Lint check                 |
 
 ---
 
@@ -181,6 +181,7 @@ All API routes follow this structure (already configured in `main.ts`):
 Current base: `http://localhost:5000/api/tribeX/auth/v1/`
 
 **Rules:**
+
 - Always version your endpoints (`/v1`, `/v2`) — never break existing consumers
 - No direct database access across services — all integration must go through the API
 - All endpoints are documented via Swagger at `/api/docs`
@@ -191,12 +192,12 @@ Current base: `http://localhost:5000/api/tribeX/auth/v1/`
 
 Use these accounts for local development and testing (Supabase seed data):
 
-| Role | Email |
-|---|---|
-| System Admin | `johndoedoe@gmail.com` |
-| Admin | `rickgrimes@gmail.com` |
-| HR Manager | `chiarraalteri@gmail.com` |
-| Employee | `ludovicastorti@gmail.com` |
+| Role         | Email                      |
+| ------------ | -------------------------- |
+| System Admin | `johndoedoe@gmail.com`     |
+| Admin        | `rickgrimes@gmail.com`     |
+| HR Manager   | `chiarraalteri@gmail.com`  |
+| Employee     | `ludovicastorti@gmail.com` |
 
 > Passwords are shared separately — ask your team lead.
 
@@ -216,6 +217,7 @@ A task is considered done only when:
 ## Testing the API Manually (Postman / curl)
 
 **Login:**
+
 ```
 POST http://localhost:5000/api/tribeX/auth/v1/login
 Content-Type: application/json
@@ -224,6 +226,7 @@ Content-Type: application/json
 ```
 
 **Authenticated request:**
+
 ```
 GET http://localhost:5000/api/tribeX/auth/v1/users
 Authorization: Bearer <access_token>

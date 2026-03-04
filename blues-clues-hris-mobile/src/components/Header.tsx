@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { UserRole } from "../services/auth.mock";
+import { UserRole } from "../services/auth";
 import { SEARCH_PLACEHOLDERS } from "../constants/config";
 import { Colors } from "../constants/colors";
 import { getInitial } from "../lib/utils";

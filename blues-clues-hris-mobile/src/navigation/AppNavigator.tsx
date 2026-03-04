@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { UserSession, getSession } from "../services/auth.mock";
+import { UserSession, getSession } from "../services/auth";
 import { Colors } from "../constants/colors";
 
 import { LoginScreen }             from "../screens/LoginScreen";

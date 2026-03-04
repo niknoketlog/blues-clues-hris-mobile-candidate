@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, TextInput, Pressable, Alert } from "react-native";
-import { mockLogin, saveSession, UserSession } from "../services/auth.mock";
+import { login, saveSession, UserSession } from "../services/auth";
 import { isValidEmail } from "../lib/utils";
 import { Colors } from "../constants/colors";
 
@@ -34,7 +34,7 @@ export const SignUpScreen = ({ navigation }: any) => {
   // Fix 2: Applicant sign-in now uses mockLogin — consistent with internal portal
   async function onSignIn() {
     setLoading(true);
-    const res = await mockLogin(email, password);
+    const res = await login(email, password, rememberMe);
     setLoading(false);
 
     if (!res.ok) {

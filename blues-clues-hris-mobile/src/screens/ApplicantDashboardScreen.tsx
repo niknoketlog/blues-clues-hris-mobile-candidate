@@ -4,7 +4,7 @@ import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { Colors } from "../constants/colors";
 import { stepProgress } from "../lib/utils";
-import { UserSession } from "../services/auth.mock";
+import { UserSession } from "../services/auth";
 
 type Job = { title: string; dept: string; location: string; posted: string; type: string };
 

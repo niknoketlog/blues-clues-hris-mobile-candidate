@@ -3,7 +3,7 @@
  * Single source of truth for persona-based navigation and labels.
  */
 
-import { UserRole } from "../services/auth.mock";
+import { UserRole } from "../services/auth";
 
 export const MENU_CONFIG: Record<UserRole, { name: string; label: string }[]> = {
   hr: [

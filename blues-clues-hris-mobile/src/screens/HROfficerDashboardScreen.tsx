@@ -4,7 +4,7 @@ import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { MetricCard } from "../components/MetricCard";
 import { Colors } from "../constants/colors";
-import { UserSession } from "../services/auth.mock";
+import { UserSession } from "../services/auth";
 
 const PIPELINE = [
   { initials: "S", name: "Sarah Connor",  dept: "Design",          status: "In Progress", progress: 45  },

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
-import { mockLogin, saveSession } from "../services/auth.mock";
+import { login, saveSession } from "../services/auth";
 import { Colors } from "../constants/colors";
 
 export const LoginScreen = ({ navigation }: any) => {
@@ -18,7 +18,7 @@ export const LoginScreen = ({ navigation }: any) => {
   async function onSubmit() {
     setError(null);
     setLoading(true);
-    const res = await mockLogin(email, password);
+    const res = await login(email, password, rememberMe);
     setLoading(false);
 
     if (!res.ok) { setError(res.error); return; }

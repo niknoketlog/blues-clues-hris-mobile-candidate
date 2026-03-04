@@ -3,7 +3,7 @@ import { View, Text, ScrollView, SafeAreaView, StatusBar } from "react-native";
 import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { Colors } from "../constants/colors";
-import { UserSession } from "../services/auth.mock";
+import { UserSession } from "../services/auth";
 
 const CHECKLIST = [
   { title: "Upload Identification Documents", status: "Pending", locked: false },

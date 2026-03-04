@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, Modal } from "react-native";
-import { clearSession, UserRole } from "../services/auth.mock";
+import { clearSession, UserRole } from "../services/auth";
 import { MENU_CONFIG, ROLE_LABELS, APP_NAME, APP_SUBTITLE } from "../constants/config";
 import { Colors } from "../constants/colors";
 import { getInitial } from "../lib/utils";

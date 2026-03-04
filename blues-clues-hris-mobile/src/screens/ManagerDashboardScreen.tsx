@@ -4,7 +4,7 @@ import { Sidebar } from "../components/Sidebar";
 import { Header } from "../components/Header";
 import { MetricCard } from "../components/MetricCard";
 import { Colors } from "../constants/colors";
-import { UserSession } from "../services/auth.mock";
+import { UserSession } from "../services/auth";
 
 const TEAM = [
   { name: "Alex Johnson",  role: "Senior Developer",   status: "Online", performance: 95  },
