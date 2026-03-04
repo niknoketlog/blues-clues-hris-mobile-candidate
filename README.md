@@ -26,7 +26,7 @@ supabase-auth-to-JWT-bluetribe/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/dreiiiiim/hris-bluesclues-backend-frontend.git
+git clone https://github.com/dreiiiiim/blues-clues-hris-backend-frontend-mobile.git
 cd blues-clues-hris-backend-frontend-mobile
 ```
 
