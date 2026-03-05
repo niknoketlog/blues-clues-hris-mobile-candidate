@@ -206,8 +206,9 @@ Use these accounts for local development and testing (Supabase seed data):
 | ------------ | -------------------------- |
 | System Admin | `johndoedoe@gmail.com`     |
 | Admin        | `rickgrimes@gmail.com`     |
-| HR Manager   | `chiarraalteri@gmail.com`  |
+| HR Officer   | `chiarraalteri@gmail.com`  |
 | Employee     | `ludovicastorti@gmail.com` |
+| Manager      | `ludovicastorti@gmail.com` |
 
 > Passwords are shared separately — ask your team lead.
 
