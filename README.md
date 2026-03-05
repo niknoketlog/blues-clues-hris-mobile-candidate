@@ -212,7 +212,8 @@ Use these accounts for local development and testing (Supabase seed data):
 | HR Manager   | `chiarraalteri@gmail.com`  |
 | Employee     | `ludovicastorti@gmail.com` |
 
-> Passwords are shared separately — ask your team lead.
+> Passwords: password123
+> FOR ALL USERS
 
 ---
 
