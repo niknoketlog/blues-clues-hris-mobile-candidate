@@ -248,3 +248,163 @@ Authorization: Bearer <access_token>
 ```
 
 Full API reference: `http://localhost:5000/api/docs`
+
+● Correct. Here's why that's the right call for your setup:  
+ Why NOT Supabase built-in Google Auth: - Supabase Auth manages its own auth.users table — completely separate from your user_profile table
+
+- Your system bypasses Supabase Auth entirely (you use the service role key to query your own tables directly)
+- Mixing Supabase Auth users with your custom user_profile would create two separate user stores to keep in sync — messy
+
+Why passport-google-oauth20 instead:
+
+- Fits directly into your NestJS architecture (you already have guards, services, controllers)
+- The Google callback gives you the user's email → you match it against your user_profile table yourself
+- After matching, you issue your own JWTs exactly as your current login() does — consistent token behavior across all login methods
+- Full control over what happens if the email doesn't exist (e.g., reject with a clear error instead of auto-creating an account)
+
+The flow in plain terms:
+Browser → GET /auth/google
+→ Google login page
+→ Google redirects to GET /auth/google/callback
+→ Your backend gets { email, name } from Google
+→ Lookup email in user_profile table
+→ If found → issue access_token + refresh_token (same as password login)
+→ If not found → return error "No account linked to this Google email"
+
+So yes — passport-google-oauth20 is the correct approach here. Want me to go ahead and implement it?
+
+08/03/2026
+
+Handoff: TOTP MFA Implementation
+
+Context
+
+Google OAuth is complete. The next feature is TOTP-based MFA (Google Authenticator / Authy).
+MFA is optional per user — they enable it from a settings page. Once enabled, every login
+requires a 6-digit code after the password step.
+
+---
+
+What's Already Done
+
+- Google OAuth employee login (GET /google, GET /google/callback)
+- Frontend callback page at src/app/auth/google/callback/page.tsx
+- rememberMe preserved across Google redirect via localStorage
+
+---
+
+Files to Create (Backend)
+
+- tribeX-hris-auth-api/src/auth/mfa.service.ts
+- tribeX-hris-auth-api/src/auth/mfa.controller.ts
+
+Files to Modify (Backend)
+
+- tribeX-hris-auth-api/src/auth/auth.service.ts — add mfa_required check at end of login()
+- tribeX-hris-auth-api/src/auth/auth.module.ts — register MfaService + MfaController
+
+Files to Create (Frontend)
+
+- frontend/.../src/app/(auth)/mfa/page.tsx — code entry page shown after login
+- frontend/.../src/app/(dashboard)/settings/mfa/page.tsx — setup page (QR code)
+
+Files to Modify (Frontend)
+
+- frontend/.../src/app/(auth)/login/page.tsx — handle mfa_required: true response
+
+---
+
+Database Change (Supabase SQL editor)
+
+ALTER TABLE user_profile
+ADD COLUMN mfa_enabled BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN mfa_secret TEXT DEFAULT NULL;
+
+---
+
+Packages to Install
+
+cd tribeX-hris-auth-api
+npm install otplib qrcode
+npm install -D @types/qrcode
+
+---
+
+API Endpoints
+
+┌────────┬────────────────────┬──────────────────────────┬──────────────────────────────────────────────┐
+│ Method │ Route │ Auth │ Purpose │
+├────────┼────────────────────┼──────────────────────────┼──────────────────────────────────────────────┤
+│ POST │ /mfa/setup │ JwtAuthGuard (logged in) │ Generate secret + QR code │
+├────────┼────────────────────┼──────────────────────────┼──────────────────────────────────────────────┤
+│ POST │ /mfa/setup/confirm │ JwtAuthGuard (logged in) │ Verify first code, save mfa_enabled=true │
+├────────┼────────────────────┼──────────────────────────┼──────────────────────────────────────────────┤
+│ POST │ /mfa/verify │ None (uses mfa_token) │ Verify code during login, return real tokens │
+└────────┴────────────────────┴──────────────────────────┴──────────────────────────────────────────────┘
+
+---
+
+Token Flow
+
+Login with MFA enabled
+
+POST /login
+→ password valid + mfa_enabled = true
+→ DO NOT return access_token yet
+→ return { mfa_required: true, mfa_token: "<5min JWT>" }
+
+mfa_token payload:
+{
+type: "mfa",
+sub_userid: "...",
+pending_access_token: "...", ← real access token, held hostage
+pending_refresh_token: "..." ← real refresh token, held hostage
+}
+
+POST /mfa/verify { mfa_token, code }
+→ verify TOTP code against mfa_secret in DB
+→ return { access_token, refresh_token } ← released from mfa_token
+
+MFA Setup (settings page)
+
+POST /mfa/setup → returns { qrCodeDataUrl, secret }
+(user scans QR in authenticator app)
+POST /mfa/setup/confirm → { code: "123456" }
+→ verifies code works → sets mfa_enabled=true in DB
+
+---
+
+Frontend Flow
+
+Login page change
+
+After loginApi() response, check:
+if (result.mfa_required) {
+sessionStorage.setItem("mfa_token", result.mfa_token);
+router.push("/mfa");
+return;
+}
+
+/mfa page
+
+- Input for 6-digit code
+- On submit: POST /mfa/verify with { mfa_token, code }
+- On success: same setTokens + saveUserInfo + redirect as normal login
+- On fail: show error, let user retry
+
+Settings MFA setup page
+
+- Button "Enable MFA" → POST /mfa/setup → show QR code image (base64 data URL)
+- Input for first code → POST /mfa/setup/confirm
+- On success: show "MFA Enabled" confirmation
+
+---
+
+Key Implementation Notes
+
+- mfa_token expires in 5 minutes — if user takes too long they go back to login
+- authenticator.verify() from otplib handles the TOTP math (30s windows)
+- mfa_secret is stored in plaintext in DB for now — can encrypt later
+- MFA setup does NOT set mfa_enabled=true until confirm step succeeds
+- Google OAuth login bypasses MFA for now (can add later)
+- Test accounts all have mfa_enabled=false by default (safe)
