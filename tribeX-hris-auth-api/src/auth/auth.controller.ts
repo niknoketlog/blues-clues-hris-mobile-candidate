@@ -70,7 +70,12 @@ export class AuthController {
 
     await this.authService.logout(refreshToken, req, accessToken);
 
-    res.clearCookie(COOKIE_NAME, { path: '/api/tribeX/auth' });
+    const isProd = process.env.NODE_ENV === 'production';
+    res.clearCookie(COOKIE_NAME, {
+      path: '/api/tribeX/auth',
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+    } as const);
 
     return { message: 'Logged out' };
   }
