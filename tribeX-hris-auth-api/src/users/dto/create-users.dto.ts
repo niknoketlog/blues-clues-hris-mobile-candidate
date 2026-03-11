@@ -18,9 +18,6 @@ export class CreateUserDto {
   role_id: string; // varchar in DB ("RID010"), not a number
 
   @IsString() @IsOptional()
-  company_id?: string; // only required when System Admin creates a user
-
-  @IsString() @IsOptional()
   department_id?: string;
 
   @IsString() @IsOptional()

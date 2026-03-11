@@ -19,6 +19,20 @@ export class UsersService {
   // All queries filter by company_id — this is what enforces multi-tenancy.
   // company_id comes from req.user (decoded from the JWT), never from the request body.
 
+  async getRoles(companyId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    // Fetch roles that belong to this company OR are global (company_id IS NULL)
+    const { data, error } = await supabase
+      .from('role')
+      .select('role_id, role_name')
+      .or(`company_id.eq.${companyId},company_id.is.null`)
+      .order('role_name');
+
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
   async findAll(companyId: string) {
     const { data, error } = await this.supabaseService.getClient()
       .from('user_profile')
@@ -147,10 +161,10 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto, companyId: string, adminUserId: string) {
     const supabase = this.supabaseService.getClient();
 
-    // Verify the user exists and belongs to this company before updating
+    // Fetch current values so we can record before/after in the audit log
     const { data: user, error: findError } = await supabase
       .from('user_profile')
-      .select('user_id, email')
+      .select('user_id, email, first_name, last_name, role_id, department_id, start_date')
       .eq('user_id', id)
       .eq('company_id', companyId)
       .maybeSingle();
@@ -160,11 +174,11 @@ export class UsersService {
 
     // Build the update payload from only the fields provided in the DTO
     const updates: Record<string, any> = {};
-    if (dto.first_name   !== undefined) updates.first_name   = dto.first_name;
-    if (dto.last_name    !== undefined) updates.last_name    = dto.last_name;
-    if (dto.role_id      !== undefined) updates.role_id      = dto.role_id;
+    if (dto.first_name    !== undefined) updates.first_name    = dto.first_name;
+    if (dto.last_name     !== undefined) updates.last_name     = dto.last_name;
+    if (dto.role_id       !== undefined) updates.role_id       = dto.role_id;
     if (dto.department_id !== undefined) updates.department_id = dto.department_id;
-    if (dto.start_date   !== undefined) updates.start_date   = dto.start_date;
+    if (dto.start_date    !== undefined) updates.start_date    = dto.start_date;
 
     if (Object.keys(updates).length === 0) {
       return { message: 'No fields to update' };
@@ -178,8 +192,15 @@ export class UsersService {
 
     if (updateError) throw new Error(updateError.message);
 
+    // Build a before/after diff for each changed field
+    const changes = Object.keys(updates).map((field) => {
+      const before = user[field] ?? null;
+      const after  = updates[field] ?? null;
+      return `${field}: "${before}" → "${after}"`;
+    }).join(', ');
+
     await this.auditService.log(
-      `User updated: ${user.email} — fields changed: ${Object.keys(updates).join(', ')}`,
+      `User profile updated: ${user.email} — ${changes}`,
       adminUserId,
       id,
     );
@@ -221,5 +242,32 @@ export class UsersService {
     await this.auditService.log(`User deactivated: ${user.email}`, adminUserId, id);
 
     return { message: 'User deactivated successfully' };
+  }
+
+  async reactivate(id: string, companyId: string, adminUserId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: user, error: findError } = await supabase
+      .from('user_profile')
+      .select('user_id, email, account_status')
+      .eq('user_id', id)
+      .eq('company_id', companyId)
+      .maybeSingle();
+
+    if (findError) throw new Error(findError.message);
+    if (!user) throw new Error('User not found in your company');
+    if (user.account_status !== 'Inactive') throw new Error('User is not inactive');
+
+    const { error: updateError } = await supabase
+      .from('user_profile')
+      .update({ account_status: 'Active' })
+      .eq('user_id', id)
+      .eq('company_id', companyId);
+
+    if (updateError) throw new Error(updateError.message);
+
+    await this.auditService.log(`User reactivated: ${user.email}`, adminUserId, id);
+
+    return { message: 'User reactivated successfully' };
   }
 }

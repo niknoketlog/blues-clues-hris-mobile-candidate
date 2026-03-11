@@ -37,13 +37,25 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('Access token required');
       }
 
+      const supabase = this.supabaseService.getClient();
+
       // Reject blacklisted (logged-out) tokens
-      const { data: blacklisted } = await this.supabaseService.getClient()
+      const { data: blacklisted } = await supabase
         .from('token_blacklist')
         .select('token_hash')
         .eq('token_hash', sha256(token))
         .maybeSingle();
       if (blacklisted) throw new UnauthorizedException('Token has been revoked');
+
+      // Reject deactivated accounts — checked on every request so enforcement is immediate
+      const { data: userStatus } = await supabase
+        .from('user_profile')
+        .select('account_status')
+        .eq('user_id', decoded.sub_userid)
+        .maybeSingle();
+      if (userStatus?.account_status === 'Inactive') {
+        throw new UnauthorizedException('Account deactivated');
+      }
 
       req.user = decoded;
       return true;

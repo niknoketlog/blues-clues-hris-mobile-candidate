@@ -24,6 +24,13 @@ export class UsersController {
     return this.usersService.findAll(req.user.company_id);
   }
 
+  @Get('roles')
+  @UseGuards(RolesGuard)
+  @Roles(...HR_AND_ABOVE)
+  getRoles(@Req() req: any) {
+    return this.usersService.getRoles(req.user.company_id);
+  }
+
   @Get('stats')
   @UseGuards(RolesGuard)
   @Roles(...HR_AND_ABOVE)
@@ -40,20 +47,9 @@ export class UsersController {
   @Roles(...ADMIN_ONLY)
   @Post()
   create(@Body() createUserDto: CreateUserDto, @Req() req: any) {
-    const isSystemAdmin = req.user.role_name === 'System Admin';
-
-    // System Admin must provide company_id in the body
-    // Admin uses their own company_id from the JWT
-    const companyId = isSystemAdmin ? createUserDto.company_id : req.user.company_id;
-
-    if (!companyId) {
-      throw new Error(
-        isSystemAdmin
-          ? 'System Admin must provide company_id in the request body'
-          : 'Could not determine company from token'
-      );
-    }
-
+    // company_id always comes from the JWT — admins and system admins are scoped to their own company
+    const companyId = req.user.company_id;
+    if (!companyId) throw new Error('Could not determine company from token');
     return this.usersService.create(createUserDto, companyId, req.user.sub_userid);
   }
 
@@ -69,5 +65,12 @@ export class UsersController {
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req: any) {
     return this.usersService.remove(id, req.user.company_id, req.user.sub_userid);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles(...ADMIN_ONLY)
+  @Patch(':id/reactivate')
+  async reactivate(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.reactivate(id, req.user.company_id, req.user.sub_userid);
   }
 }

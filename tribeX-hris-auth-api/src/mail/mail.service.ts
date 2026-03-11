@@ -1,50 +1,80 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
-  private readonly resend: Resend;
+  private readonly transporter: nodemailer.Transporter;
   private readonly from: string;
   private readonly logger = new Logger(MailService.name);
 
   constructor(private readonly config: ConfigService) {
-    this.resend = new Resend(this.config.get<string>('RESEND_API_KEY'));
-    this.from = this.config.get<string>('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
+    const user = this.config.get<string>('MAIL_USER') ?? '';
+    const pass = this.config.get<string>('MAIL_PASS') ?? '';
+
+    this.from = `"Blues Clues HRIS" <${user}>`;
+
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+    });
   }
 
   async sendInvite(to: string, inviteLink: string) {
-    const { error } = await this.resend.emails.send({
-      from: this.from,
-      to,
-      subject: 'You have been invited to Blues Clues HRIS',
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2>You're invited!</h2>
-          <p>A system administrator has created an account for you on <strong>Blues Clues HRIS</strong>.</p>
-          <p>Click the button below to set your password and activate your account.</p>
-          <a href="${inviteLink}" style="
-            display: inline-block;
-            margin-top: 16px;
-            padding: 12px 24px;
-            background-color: #7c3aed;
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-          ">
-            Activate Account
-          </a>
-          <p style="margin-top: 24px; color: #6b7280; font-size: 12px;">
-            This link expires in 48 hours. If you did not expect this email, you can ignore it.
-          </p>
-        </div>
-      `,
-    });
-
-    if (error) {
+    try {
+      await this.transporter.sendMail({
+        from: this.from,
+        to,
+        subject: 'You have been invited to Blues Clues HRIS',
+        html: `
+          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <div style="background-color: #99e0fe; padding: 32px 24px; text-align: center;">
+              <h1 style="margin: 0; font-size: 22px; color: #0c1a2e; letter-spacing: 0.5px;">Blues Clues HRIS</h1>
+            </div>
+            <div style="padding: 32px 24px;">
+              <h2 style="margin-top: 0; color: #0c1a2e;">You're invited!</h2>
+              <p style="color: #374151;">A system administrator has created an account for you on <strong>Blues Clues HRIS</strong>.</p>
+              <p style="color: #374151;">Click the button below to set your password and activate your account.</p>
+              <div style="text-align: center; margin-top: 24px;">
+                <a href="${inviteLink}" style="
+                  display: inline-block;
+                  padding: 12px 28px;
+                  background-color: #99e0fe;
+                  color: #0c1a2e;
+                  text-decoration: none;
+                  border-radius: 8px;
+                  font-weight: bold;
+                  font-size: 15px;
+                ">
+                  Activate Account
+                </a>
+              </div>
+              <p style="margin-top: 32px; color: #6b7280; font-size: 12px; text-align: center;">
+                This link expires in 48 hours. If you did not expect this email, you can ignore it.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+    } catch (error) {
       this.logger.error('Failed to send invite email', error);
       throw new Error('Failed to send invite email');
     }
+  }
+
+  async sendVerificationEmail(to: string, verifyLink: string): Promise<void> {
+    await this.transporter.sendMail({
+      from: `"Blues Clues HRIS" <${this.config.get('MAIL_USER')}>`,
+      to,
+      subject: 'Verify your email address',
+      html: `
+        <p>Thank you for registering.</p>
+        <p>Please verify your email by clicking the link below:</p>
+        <p><a href="${verifyLink}">Verify Email</a></p>
+        <p>This link expires in 24 hours.</p>
+      `,
+    });
   }
 }
