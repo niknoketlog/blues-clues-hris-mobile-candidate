@@ -19,6 +19,7 @@ type Employee = {
   last_name: string | null;
   email: string;
   role_id: number;
+  account_status: string | null;
 };
 
 export default function HRDashboardPage() {
@@ -27,6 +28,7 @@ export default function HRDashboardPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const itemsPerPage = 5;
 
   const user = getUserInfo();
@@ -42,7 +44,7 @@ export default function HRDashboardPage() {
         setEmployees(Array.isArray(emps) ? emps : []);
         setTotalCount(stats?.total ?? null);
       })
-      .catch(() => {})
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -62,8 +64,9 @@ export default function HRDashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <MetricCard icon={Users}    label="Total Headcount"       value={totalCount !== null ? String(totalCount) : "—"} sub="Active Employees" trend={totalCount !== null ? `${totalCount} total` : "Loading..."} />
-        <MetricCard icon={FileText} label="Pending Verifications" value="—"  sub="Action Required"  trend="Coming soon" isAlert />
-        <MetricCard icon={UserPlus} label="New Hires"             value="—"  sub="Onboarding"       trend="Coming soon" />
+        {/* TODO: wire to dedicated endpoint when available */}
+        <MetricCard icon={FileText} label="Pending Verifications" value="—" sub="Action Required"  trend="Coming soon" isAlert />
+        <MetricCard icon={UserPlus} label="New Hires"             value="—" sub="Onboarding"       trend="Coming soon" />
       </div>
 
       <Card className="border-border overflow-hidden">
@@ -100,6 +103,8 @@ export default function HRDashboardPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr><td colSpan={4} className="px-6 py-8 text-center text-muted-foreground text-sm">Loading employees...</td></tr>
+              ) : fetchError ? (
+                <tr><td colSpan={4} className="px-6 py-8 text-center text-destructive text-sm">Failed to load employees. Please refresh or contact support.</td></tr>
               ) : currentTableData.length === 0 ? (
                 <tr><td colSpan={4} className="px-6 py-8 text-center text-muted-foreground text-sm">No employees found.</td></tr>
               ) : currentTableData.map((row) => {
@@ -115,7 +120,7 @@ export default function HRDashboardPage() {
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{row.email}</td>
                     <td className="px-6 py-4">
-                      <Badge variant="default" className="text-[9px]">Active</Badge>
+                      <StatusBadge status={row.account_status} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
@@ -147,6 +152,15 @@ export default function HRDashboardPage() {
       </Card>
     </div>
   );
+}
+
+function StatusBadge({ status }: { status?: string | null }) {
+  const s = status?.toLowerCase();
+  if (s === 'active')
+    return <Badge className="text-[9px] bg-green-100 hover:bg-green-100 text-green-700 border border-green-200">Active</Badge>;
+  if (s === 'inactive')
+    return <Badge className="text-[9px] bg-red-100 hover:bg-red-100 text-red-700 border border-red-200">Inactive</Badge>;
+  return <Badge className="text-[9px] bg-amber-100 hover:bg-amber-100 text-amber-700 border border-amber-200">Pending</Badge>;
 }
 
 function MetricCard({ icon: Icon, label, value, sub, trend, isAlert }: any) {

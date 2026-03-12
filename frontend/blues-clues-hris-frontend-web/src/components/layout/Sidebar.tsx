@@ -37,11 +37,10 @@ const ROLE_LABELS: Record<string, string> = {
   manager: "Management Portal",
   employee: "Staff Portal",
   applicant: "Candidate Portal",
-  admin: "Admin Portal",
-  "system-admin": "System Admin",
+  admin: "System Admin",
 };
 
-type PersonaType = "applicant" | "employee" | "hr" | "manager" | "admin" | "system-admin";
+type PersonaType = "applicant" | "employee" | "hr" | "manager" | "admin";
 
 const MENU_CONFIG: Record<PersonaType, { name: string; href: string; icon: any }[]> = {
   manager: [
@@ -67,10 +66,6 @@ const MENU_CONFIG: Record<PersonaType, { name: string; href: string; icon: any }
     { name: "Performance", href: "/hr/performance", icon: BarChart },
   ],
   admin: [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "Users", href: "/admin/users", icon: Users },
-  ],
-  "system-admin": [
     { name: "Dashboard", href: "/system-admin", icon: LayoutDashboard },
     { name: "Users", href: "/system-admin/users", icon: Users },
   ],
@@ -90,12 +85,17 @@ export function Sidebar({ persona = "applicant" }: { persona?: PersonaType }) {
     router.push("/login");
   };
 
-  const linkStyle = (href: string) =>
-    `flex items-center gap-3 px-3 py-2.5 rounded-md font-medium text-sm transition-all ${
-      pathname === href
+  const ROOT_PATHS = ["/system-admin", "/admin", "/hr", "/manager", "/employee"];
+  const linkStyle = (href: string) => {
+    const isActive = ROOT_PATHS.includes(href)
+      ? pathname === href
+      : pathname === href || pathname.startsWith(href + "/");
+    return `flex items-center gap-3 px-3 py-2.5 rounded-md font-medium text-sm transition-all ${
+      isActive
         ? "bg-sidebar-primary text-sidebar-foreground shadow-sm"
         : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
     }`;
+  };
 
   const currentMenu = MENU_CONFIG[persona] || [];
 

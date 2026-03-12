@@ -20,6 +20,7 @@ type Employee = {
   last_name: string | null;
   email: string;
   role_id: number;
+  account_status: string | null;
 };
 
 export default function ManagerDashboardPage() {
@@ -28,6 +29,7 @@ export default function ManagerDashboardPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const itemsPerPage = 5;
 
   const user = getUserInfo();
@@ -40,10 +42,10 @@ export default function ManagerDashboardPage() {
       authFetch(`${API_BASE_URL}/users/stats`).then(r => r.json()),
     ])
       .then(([emps, stats]) => {
-        setEmployees(Array.isArray(emps) ? emps : []);
+        setEmployees(Array.isArray(emps) ? emps.filter((e: Employee) => e.email !== user?.email) : []);
         setTotalCount(stats?.total ?? null);
       })
-      .catch(() => {})
+      .catch(() => setFetchError(true))
       .finally(() => setLoading(false));
   }, []);
 
@@ -62,9 +64,10 @@ export default function ManagerDashboardPage() {
     <div className="space-y-6 animate-in fade-in duration-500">
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MetricCard icon={Users}       label="My Team Size"        value={totalCount !== null ? String(totalCount) : "—"} sub="Company Members" trend={totalCount !== null ? `${totalCount} total` : "Loading..."} />
-        <MetricCard icon={Clock}       label="Pending Requests"    value="—" sub="Time-off approvals" trend="Coming soon" isAlert />
-        <MetricCard icon={CheckCircle} label="Approvals Needed"    value="—" sub="Performance reviews" trend="Coming soon" />
+        <MetricCard icon={Users}       label="My Team Size"     value={totalCount !== null ? String(totalCount) : "—"} sub="Company Members"    trend={totalCount !== null ? `${totalCount} total` : "Loading..."} />
+        {/* TODO: wire to dedicated endpoint when available */}
+        <MetricCard icon={Clock}       label="Pending Requests" value="—" sub="Time-off approvals"  trend="Coming soon" isAlert />
+        <MetricCard icon={CheckCircle} label="Approvals Needed" value="—" sub="Performance reviews" trend="Coming soon" />
       </div>
 
       <Card className="border-border overflow-hidden">
@@ -101,6 +104,8 @@ export default function ManagerDashboardPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr><td colSpan={4} className="px-6 py-8 text-center text-muted-foreground text-sm">Loading team...</td></tr>
+              ) : fetchError ? (
+                <tr><td colSpan={4} className="px-6 py-8 text-center text-destructive text-sm">Failed to load team data. Please refresh or contact support.</td></tr>
               ) : currentTableData.length === 0 ? (
                 <tr><td colSpan={4} className="px-6 py-8 text-center text-muted-foreground text-sm">No team members found.</td></tr>
               ) : currentTableData.map((row) => {
@@ -115,7 +120,7 @@ export default function ManagerDashboardPage() {
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{row.email}</td>
                     <td className="px-6 py-4">
-                      <Badge variant="default" className="text-[9px]">Active</Badge>
+                      <StatusBadge status={row.account_status} />
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
@@ -147,6 +152,15 @@ export default function ManagerDashboardPage() {
       </Card>
     </div>
   );
+}
+
+function StatusBadge({ status }: { status?: string | null }) {
+  const s = status?.toLowerCase();
+  if (s === 'active')
+    return <Badge className="text-[9px] bg-green-100 hover:bg-green-100 text-green-700 border border-green-200">Active</Badge>;
+  if (s === 'inactive')
+    return <Badge className="text-[9px] bg-red-100 hover:bg-red-100 text-red-700 border border-red-200">Inactive</Badge>;
+  return <Badge className="text-[9px] bg-amber-100 hover:bg-amber-100 text-amber-700 border border-amber-200">Pending</Badge>;
 }
 
 function MetricCard({ icon: Icon, label, value, sub, trend, isAlert }: any) {

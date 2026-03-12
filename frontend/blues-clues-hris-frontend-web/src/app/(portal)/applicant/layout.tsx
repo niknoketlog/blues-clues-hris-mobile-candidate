@@ -1,8 +1,9 @@
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getAccessToken } from "@/lib/authStorage";
+import { refreshApi } from "@/lib/authApi";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 
@@ -13,17 +14,32 @@ export default function PortalLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const isLoginPage = pathname.includes("/login");
+  const isPublicPage = pathname.includes("/login") || pathname.includes("/verify-email");
+  const [ready, setReady] = useState(false);
 
   useLayoutEffect(() => {
-    if (!isLoginPage && !getAccessToken()) {
-      router.replace("/applicant/login");
+    if (isPublicPage) {
+      setReady(true);
+      return;
     }
-  }, [isLoginPage, router]);
 
-  if (isLoginPage) {
+    // Access token is in-memory only — always lost on page reload.
+    // Attempt a silent refresh via the HttpOnly cookie before redirecting.
+    if (getAccessToken()) {
+      setReady(true);
+      return;
+    }
+
+    refreshApi()
+      .then(() => setReady(true))
+      .catch(() => router.replace("/applicant/login"));
+  }, [isPublicPage, router]);
+
+  if (isPublicPage) {
     return <div className="min-h-screen">{children}</div>;
   }
+
+  if (!ready) return null;
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden font-sans">

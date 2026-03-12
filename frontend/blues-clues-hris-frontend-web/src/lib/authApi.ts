@@ -27,6 +27,19 @@ export async function loginApi(body: {
   return data as { access_token: string };
 }
 
+export async function applicantLoginApi(body: { email: string; password: string }) {
+  const res = await fetch(`${API_BASE_URL}/applicants/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.message || "Login failed");
+
+  return data as { access_token: string };
+}
+
 // TODO (Sprint 2 - Backend): implement Google OAuth endpoint
 // Expected endpoint: POST /api/tribeX/auth/v1/auth/google
 //
@@ -88,8 +101,10 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
   const access = getAccessToken();
 
   // 1) try request with access token
+  // credentials: "include" ensures the HttpOnly refresh cookie is forwarded
   const first = await fetch(input, {
     ...init,
+    credentials: "include",
     headers: {
       ...(init.headers || {}),
       ...(access ? { Authorization: `Bearer ${access}` } : {}),
@@ -108,6 +123,7 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
 
     const second = await fetch(input, {
       ...init,
+      credentials: "include",
       headers: {
         ...(init.headers || {}),
         Authorization: `Bearer ${access_token}`,
@@ -116,8 +132,11 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}) {
 
     return second;
   } catch {
-    // refresh failed: clear and return original 401
+    // refresh failed: session is fully expired — clear storage and send to login
     clearAuthStorage();
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
     return first;
   }
 }

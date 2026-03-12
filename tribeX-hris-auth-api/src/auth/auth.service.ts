@@ -16,6 +16,7 @@ type UserRow = {
   first_name: string | null;
   last_name: string | null;
   start_date: string | null;
+  account_status: string | null;
 };
 
 function sha256(input: string) {
@@ -54,7 +55,7 @@ export class AuthService {
 
     const { data: user, error } = await supabase
       .from('user_profile')
-      .select('user_id, company_id, role_id, password_hash, email, username, first_name, last_name, start_date')
+      .select('user_id, company_id, role_id, password_hash, email, username, first_name, last_name, start_date, account_status')
       .or(`email.eq."${identifier}",username.eq."${identifier}"`)
       .maybeSingle<UserRow>();
 
@@ -63,6 +64,7 @@ export class AuthService {
       throw new UnauthorizedException('Login failed');
     }
     if (!user) throw new UnauthorizedException('User not found');
+    if (user.account_status === 'Inactive') throw new UnauthorizedException('Your account has been deactivated. Please contact your administrator.');
     if (!user.password_hash) throw new UnauthorizedException('No password set');
 
     // Block login if today is before the employee's start date
@@ -178,10 +180,12 @@ export class AuthService {
       .eq('user_id', decoded.sub_userid)
       .eq('token_hash', token_hash);
 
-    // Blacklist the access token so it cannot be used after logout
+    // Blacklist the access token so it cannot be used after logout.
+    // verifyAsync (not decode) is used so that unsigned/tampered strings cannot
+    // pollute the blacklist table with junk rows.
     if (accessToken) {
       try {
-        const accessDecoded: any = this.jwtService.decode(accessToken);
+        const accessDecoded: any = await this.jwtService.verifyAsync(accessToken);
         if (accessDecoded?.exp) {
           await supabase.from('token_blacklist').insert({
             token_hash: sha256(accessToken),
@@ -240,11 +244,12 @@ export class AuthService {
 
     const { data: user, error: userErr } = await supabase
       .from('user_profile')
-      .select('user_id, company_id, role_id, first_name, last_name')
+      .select('user_id, company_id, role_id, first_name, last_name, account_status')
       .eq('user_id', userId)
       .single();
 
     if (userErr || !user) throw new UnauthorizedException('User not found');
+    if (user.account_status === 'Inactive') throw new UnauthorizedException('Account deactivated');
 
     const { data: roleRow } = await supabase
       .from('role')
@@ -296,11 +301,12 @@ export class AuthService {
 
       const { data: user, error } = await supabase
         .from('user_profile')
-        .select('user_id, email, username, employee_id, company_id, role_id')
+        .select('user_id, email, username, employee_id, company_id, role_id, account_status')
         .eq('user_id', userId)
         .maybeSingle<UserRow>();
 
       if (error || !user) throw new UnauthorizedException('User not found');
+      if (user.account_status === 'Inactive') throw new UnauthorizedException('Account deactivated');
 
       return {
         user_id: user.user_id,
@@ -334,10 +340,10 @@ export class AuthService {
     // Hash the new password
     const password_hash = await bcrypt.hash(password, 12);
 
-    // Set the password and mark email as verified
+    // Set the password and activate the account
     const { error: updateError } = await supabase
       .from('user_profile')
-      .update({ password_hash, email_verified: true })
+      .update({ password_hash, account_status: 'Active' })
       .eq('user_id', invite.user_id);
 
     if (updateError) throw new Error(updateError.message);
