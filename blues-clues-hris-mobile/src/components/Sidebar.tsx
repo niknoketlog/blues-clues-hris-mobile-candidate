@@ -9,11 +9,12 @@ import { getInitial } from "../lib/utils";
 type Props = {
   role: UserRole;
   userName: string;
+  email?: string;
   activeScreen: string;
   navigation: any;
 };
 
-export const Sidebar = ({ role, userName, activeScreen, navigation }: Props) => {
+export const Sidebar = ({ role, userName, email = "", activeScreen, navigation }: Props) => {
   const [showLogout, setShowLogout] = useState(false);
   const initial = getInitial(userName);
 
@@ -26,16 +27,7 @@ export const Sidebar = ({ role, userName, activeScreen, navigation }: Props) => 
     });
   }
 
-  const session = {
-    name: userName,
-    role,
-    email:
-      role === "system_admin" || role === "admin"
-        ? "rickgrimes"
-        : role === "applicant"
-        ? "montanielandrei@gmail.com"
-        : "",
-  };
+  const session = { name: userName, role, email };
 
   const switchTo = (target: string) => {
     navigation.dispatch(
@@ -50,39 +42,28 @@ export const Sidebar = ({ role, userName, activeScreen, navigation }: Props) => 
     if (screenName === activeScreen) return;
 
     if (role === "system_admin" || role === "admin") {
-      if (screenName === "Dashboard") {
-        switchTo("SystemAdminDashboard");
-        return;
-      }
-
-      if (screenName === "Users") {
-        switchTo("SystemAdminUsers");
-        return;
-      }
-
-      if (screenName === "Billing") {
-        switchTo("SystemAdminBilling");
-        return;
-      }
+      if (screenName === "Dashboard") { switchTo("SystemAdminDashboard"); return; }
+      if (screenName === "Users")     { switchTo("SystemAdminUsers");     return; }
+      if (screenName === "Billing")   { switchTo("SystemAdminBilling");   return; }
     }
 
     if (role === "manager") {
-      if (screenName === "Dashboard") {
-        switchTo("ManagerDashboard");
-        return;
-      }
-
-      if (screenName === "Timekeeping") {
-        switchTo("ManagerDashboard");
-        return;
+      if (screenName === "Dashboard" || screenName === "Timekeeping") {
+        switchTo("ManagerDashboard"); return;
       }
     }
 
+    if (role === "hr") {
+      if (screenName === "Dashboard") { switchTo("HROfficerDashboard"); return; }
+      if (screenName === "Recruitment") { switchTo("HROfficerRecruitment"); return; }
+    }
+
+    if (role === "employee") {
+      if (screenName === "Dashboard") { switchTo("EmployeeDashboard"); return; }
+    }
+
     if (role === "applicant") {
-      if (screenName === "Dashboard") {
-        switchTo("ApplicantDashboard");
-        return;
-      }
+      if (screenName === "Dashboard") { switchTo("ApplicantDashboard"); return; }
     }
   };
 

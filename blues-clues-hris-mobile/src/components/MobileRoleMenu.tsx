@@ -15,6 +15,7 @@ import { MENU_CONFIG, ROLE_LABELS } from "../constants/config";
 type Props = {
   role: UserRole;
   userName: string;
+  email?: string;
   activeScreen: string;
   navigation: any;
 };
@@ -22,26 +23,17 @@ type Props = {
 export function MobileRoleMenu({
   role,
   userName,
+  email = "",
   activeScreen,
   navigation,
 }: Props) {
   const [visible, setVisible] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
 
-  const session = {
-    name: userName,
-    role,
-    email:
-      role === "system_admin" || role === "admin"
-        ? "rickgrimes"
-        : role === "applicant"
-        ? "montanielandrei@gmail.com"
-        : "",
-  };
+  const session = { name: userName, role, email };
 
   const switchTo = (target: string) => {
     setVisible(false);
-
     navigation.dispatch(
       CommonActions.reset({
         index: 0,
@@ -51,45 +43,31 @@ export function MobileRoleMenu({
   };
 
   const goToScreen = (screenName: string) => {
-    if (screenName === activeScreen) {
-      setVisible(false);
-      return;
-    }
+    if (screenName === activeScreen) { setVisible(false); return; }
 
     if (role === "system_admin" || role === "admin") {
-      if (screenName === "Dashboard") {
-        switchTo("SystemAdminDashboard");
-        return;
-      }
-
-      if (screenName === "Users") {
-        switchTo("SystemAdminUsers");
-        return;
-      }
-
-      if (screenName === "Billing") {
-        switchTo("SystemAdminBilling");
-        return;
-      }
+      if (screenName === "Dashboard") { switchTo("SystemAdminDashboard"); return; }
+      if (screenName === "Users")     { switchTo("SystemAdminUsers");     return; }
+      if (screenName === "Billing")   { switchTo("SystemAdminBilling");   return; }
     }
 
     if (role === "manager") {
-      if (screenName === "Dashboard") {
-        switchTo("ManagerDashboard");
-        return;
-      }
-
-      if (screenName === "Timekeeping") {
-        switchTo("ManagerDashboard");
-        return;
+      if (screenName === "Dashboard" || screenName === "Timekeeping") {
+        switchTo("ManagerDashboard"); return;
       }
     }
 
+    if (role === "hr") {
+      if (screenName === "Dashboard") { switchTo("HROfficerDashboard"); return; }
+      if (screenName === "Recruitment") { switchTo("HROfficerRecruitment"); return; }
+    }
+
+    if (role === "employee") {
+      if (screenName === "Dashboard") { switchTo("EmployeeDashboard"); return; }
+    }
+
     if (role === "applicant") {
-      if (screenName === "Dashboard") {
-        switchTo("ApplicantDashboard");
-        return;
-      }
+      if (screenName === "Dashboard") { switchTo("ApplicantDashboard"); return; }
     }
 
     setVisible(false);
