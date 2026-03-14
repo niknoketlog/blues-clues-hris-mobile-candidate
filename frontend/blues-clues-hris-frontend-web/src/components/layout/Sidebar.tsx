@@ -17,6 +17,7 @@ import {
   FileCheck,
   Layers,
   ClipboardCheck,
+  Clock3,
   Loader2
 } from "lucide-react";
 
@@ -37,15 +38,17 @@ const ROLE_LABELS: Record<string, string> = {
   manager: "Management Portal",
   employee: "Staff Portal",
   applicant: "Candidate Portal",
-  admin: "System Admin",
+  admin: "Admin Portal",
+  "system-admin": "System Admin",
 };
 
-type PersonaType = "applicant" | "employee" | "hr" | "manager" | "admin";
+type PersonaType = "applicant" | "employee" | "hr" | "manager" | "admin" | "system-admin";
 
 const MENU_CONFIG: Record<PersonaType, { name: string; href: string; icon: any }[]> = {
   manager: [
     { name: "Dashboard", href: "/manager", icon: LayoutDashboard },
     { name: "Team", href: "/manager/team", icon: Users },
+    { name: "Timekeeping", href: "/manager/timekeeping", icon: Clock3 },
     { name: "Approvals", href: "/manager/approvals", icon: ClipboardCheck },
   ],
   applicant: [
@@ -60,14 +63,20 @@ const MENU_CONFIG: Record<PersonaType, { name: string; href: string; icon: any }
   ],
   hr: [
     { name: "Dashboard", href: "/hr", icon: LayoutDashboard },
-    { name: "Recruitment", href: "/hr/recruitment", icon: Users },
+    { name: "Jobs", href: "/hr/jobs", icon: Briefcase },
     { name: "Onboarding", href: "/hr/onboarding", icon: UserPlus },
     { name: "Compensation", href: "/hr/payroll", icon: DollarSign },
     { name: "Performance", href: "/hr/performance", icon: BarChart },
   ],
   admin: [
+    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { name: "Users", href: "/admin/users", icon: Users },
+  ],
+  "system-admin": [
     { name: "Dashboard", href: "/system-admin", icon: LayoutDashboard },
     { name: "Users", href: "/system-admin/users", icon: Users },
+    { name: "Subscriptions", href: "/system-admin/subscriptions", icon: DollarSign },
+    { name: "Global Settings", href: "/system-admin/settings", icon: ClipboardCheck },
   ],
 };
 
@@ -81,8 +90,14 @@ export function Sidebar({ persona = "applicant" }: { persona?: PersonaType }) {
   }, []);
 
   const handleLogout = async () => {
-    await logoutApi();
-    router.push("/login");
+    if (user?.role === "applicant") {
+      const { applicantLogoutApi } = await import("@/lib/authApi");
+      await applicantLogoutApi();
+      router.push("/applicant/login");
+    } else {
+      await logoutApi();
+      router.push("/login");
+    }
   };
 
   const ROOT_PATHS = ["/system-admin", "/admin", "/hr", "/manager", "/employee"];

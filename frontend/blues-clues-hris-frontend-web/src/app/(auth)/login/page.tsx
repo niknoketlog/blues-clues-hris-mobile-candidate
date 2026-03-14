@@ -91,13 +91,19 @@ export default function EmployeeLoginPage() {
   // credentialResponse.credential is the Google ID token — pass it directly to googleLoginApi().
   // On success, follow same post-login flow as handleLogin():
   // setTokens() → parseJwt() → saveUserInfo() → router.push()
-  const handleGoogleSignIn = (credentialResponse: any) => {
-    // TODO: googleLoginApi(credentialResponse.credential)
+  const handleGoogleSignIn = (_credentialResponse: any) => {
+    setError("Google sign-in is not enabled yet in this environment.");
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/20 p-4">
-      <Card className="w-full max-w-md shadow-lg border-border">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_45%,#ecfeff_100%)] p-4">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-24 top-10 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
+        <div className="absolute -right-20 bottom-10 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_45%)]" />
+      </div>
+
+      <Card className="relative w-full max-w-md border-border/70 bg-card/90 shadow-xl backdrop-blur-sm">
         <CardHeader className="text-center pb-6">
           <div className="flex flex-col items-center mb-4">
             <span className="text-xl font-bold tracking-tight text-primary">
@@ -133,7 +139,7 @@ export default function EmployeeLoginPage() {
               width="368"
             />
           </div> */}
-          <GoogleSignInButton disabled={isLoading} onClick={() => {}} />
+          <GoogleSignInButton disabled={isLoading} onClick={() => setError("Google sign-in is not enabled yet in this environment.")} />
 
           {/* Divider */}
           <div className="flex items-center gap-3">
