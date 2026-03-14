@@ -104,20 +104,39 @@ export const HROfficerDashboardScreen = ({ route, navigation }: any) => {
           )}
 
           <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
-            <View style={{ backgroundColor: Colors.primary }} className="rounded-2xl p-5 mb-4">
-              <Text className="text-white text-[10px] font-bold uppercase tracking-widest">HR Control Center</Text>
-              <Text className="text-white text-xl font-bold mt-1">Welcome, {session.name}</Text>
-              <Text className="text-white/80 text-xs mt-2 leading-5">
-                Daily staffing visibility and recruitment shortcuts in one place.
-              </Text>
+            <View style={{ backgroundColor: Colors.primary }} className="rounded-2xl px-5 py-4 mb-4">
+              <View className="mb-3">
+                <Text className="text-white/80 text-[10px] font-bold uppercase tracking-widest">HR Control Center</Text>
+                <Text className="text-white text-xl font-bold mt-1 leading-7">Welcome, {session.name}</Text>
+                <Text className="text-white/85 text-xs mt-1.5 leading-5">
+                  Daily staffing visibility and recruitment shortcuts in one place.
+                </Text>
+              </View>
 
-              <View className="flex-row gap-2 mt-4">
+              <View className={`mb-3 ${isMobile ? "gap-2" : "flex-row gap-2"}`}>
+                <View
+                  style={{ backgroundColor: "rgba(255,255,255,0.13)", borderColor: "rgba(255,255,255,0.2)" }}
+                  className="rounded-xl border px-3 py-2"
+                >
+                  <Text className="text-white/70 text-[9px] font-bold uppercase tracking-widest">Team</Text>
+                  <Text className="text-white text-sm font-bold mt-0.5">{totalCount ?? "--"} Employees</Text>
+                </View>
+                <View
+                  style={{ backgroundColor: "rgba(255,255,255,0.13)", borderColor: "rgba(255,255,255,0.2)" }}
+                  className="rounded-xl border px-3 py-2"
+                >
+                  <Text className="text-white/70 text-[9px] font-bold uppercase tracking-widest">Open Roles</Text>
+                  <Text className="text-white text-sm font-bold mt-0.5">{openJobs} Active</Text>
+                </View>
+              </View>
+
+              <View className={`${isMobile ? "gap-2" : "flex-row gap-2"}`}>
                 <Pressable
                   onPress={() => navigation.navigate("HROfficerRecruitment", { session })}
                   style={{ backgroundColor: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.25)" }}
-                  className="px-3 py-2 rounded-lg border"
+                  className={`${isMobile ? "w-full" : ""} px-3 py-2.5 rounded-lg border items-center`}
                 >
-                  <Text className="text-white text-[11px] font-bold uppercase tracking-wider">Recruitment</Text>
+                  <Text className="text-white text-[11px] font-bold uppercase tracking-wider">Open Recruitment</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => {
@@ -125,9 +144,9 @@ export const HROfficerDashboardScreen = ({ route, navigation }: any) => {
                     loadDashboard();
                   }}
                   style={{ backgroundColor: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.25)" }}
-                  className="px-3 py-2 rounded-lg border"
+                  className={`${isMobile ? "w-full" : ""} px-3 py-2.5 rounded-lg border items-center`}
                 >
-                  <Text className="text-white text-[11px] font-bold uppercase tracking-wider">Refresh</Text>
+                  <Text className="text-white text-[11px] font-bold uppercase tracking-wider">Refresh Data</Text>
                 </Pressable>
               </View>
             </View>
