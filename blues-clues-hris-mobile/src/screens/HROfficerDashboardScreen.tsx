@@ -132,22 +132,26 @@ export const HROfficerDashboardScreen = ({ route, navigation }: any) => {
               </View>
             </View>
 
-            <View className="flex-row gap-3 mb-4">
-              <MetricCard
-                label="Headcount"
-                value={totalCount !== null ? String(totalCount) : "--"}
-                sub="Active employees"
-                trend=""
-              />
-              <MetricCard
-                label="Open Jobs"
-                value={String(openJobs)}
-                sub="Accepting applicants"
-                trend=""
-              />
+            <View className={`${isMobile ? "mb-3 gap-3" : "flex-row gap-3 mb-4"}`}>
+              <View className="flex-1">
+                <MetricCard
+                  label="Headcount"
+                  value={totalCount !== null ? String(totalCount) : "--"}
+                  sub="Active employees"
+                  trend=""
+                />
+              </View>
+              <View className="flex-1">
+                <MetricCard
+                  label="Open Jobs"
+                  value={String(openJobs)}
+                  sub="Accepting applicants"
+                  trend=""
+                />
+              </View>
             </View>
 
-            <View className="mb-4">
+            <View className={`${isMobile ? "mb-3" : "mb-4"}`}>
               <MetricCard
                 label="Draft Jobs"
                 value={String(draftJobs)}
@@ -157,7 +161,7 @@ export const HROfficerDashboardScreen = ({ route, navigation }: any) => {
               />
             </View>
 
-            <View className="rounded-2xl bg-white shadow-sm mb-6 overflow-hidden">
+            <View className="rounded-2xl bg-white shadow-sm mb-6 overflow-hidden relative">
               <View style={{ backgroundColor: Colors.bgMuted, borderBottomColor: Colors.border }} className="px-4 pt-4 pb-3 border-b">
                 <Text style={{ color: Colors.textPrimary }} className="font-bold text-base">Employee Directory</Text>
                 <Text style={{ color: Colors.textMuted }} className="text-xs mt-0.5">All employees in your company</Text>
