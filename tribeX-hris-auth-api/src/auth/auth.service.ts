@@ -63,7 +63,7 @@ export class AuthService {
       this.logger.error(`DB error during login for: ${identifier}`, error);
       throw new UnauthorizedException('Login failed');
     }
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user) throw new UnauthorizedException('No account found with that email or username.');
     if (user.account_status === 'Inactive') throw new UnauthorizedException('Your account has been deactivated. Please contact your administrator.');
     if (!user.password_hash) throw new UnauthorizedException('No password set');
 
@@ -91,7 +91,7 @@ export class AuthService {
         browser_info: getBrowser(req),
         status: 'FAILED',
       });
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Incorrect password. Please try again.');
     }
 
     const { data: roleRow, error: roleError } = await supabase

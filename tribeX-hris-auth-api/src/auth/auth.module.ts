@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { SupabaseModule } from '../supabase/supabase.module';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { ApplicantJwtAuthGuard } from './applicant-jwt-auth.guard';
 import { RolesGuard } from './roles.guard';
 
 @Module({
@@ -26,7 +27,7 @@ import { RolesGuard } from './roles.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthGuard, RolesGuard],
-  exports: [AuthService, JwtAuthGuard, RolesGuard, JwtModule], // ✅ export so other modules can use it
+  providers: [AuthService, JwtAuthGuard, ApplicantJwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, ApplicantJwtAuthGuard, RolesGuard, JwtModule],
 })
 export class AuthModule {}
