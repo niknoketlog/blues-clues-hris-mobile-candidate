@@ -212,14 +212,13 @@ export class ApplicantsService {
     }
 
     if (decoded.type !== 'refresh') throw new UnauthorizedException('Invalid refresh token type');
-    if (decoded.role_name !== 'Applicant') throw new UnauthorizedException('Not an applicant refresh token');
 
     const token_hash = sha256(refreshToken);
 
     const { data: session, error } = await supabase
-      .from('refresh_session')
+      .from('applicant_refresh_session')
       .select('expires_at, revoked_at')
-      .eq('user_id', decoded.sub_userid)
+      .eq('applicant_id', decoded.sub_userid)
       .eq('token_hash', token_hash)
       .maybeSingle();
 

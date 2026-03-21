@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { getUserInfo, getAccessToken, parseJwt, type StoredUser } from "@/lib/authStorage";
 import { useWelcomeToast } from "@/lib/useWelcomeToast";
 import {
@@ -15,7 +16,7 @@ import { toast } from "sonner";
 import {
   Check, Briefcase, MapPin, Clock,
   Search, ChevronRight, Building2, X, Loader2, CheckCircle,
-  DollarSign,
+  DollarSign, FileText, TrendingUp, CalendarClock, Sparkles,
 } from "lucide-react";
 
 // ─── Application Form Modal (same as in /applicant/jobs) ─────────────────────
@@ -232,6 +233,27 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 7)}w ago`;
 }
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function statusLabel(status: string): string {
+  const map: Record<string, string> = {
+    submitted: "Submitted", screening: "Screening",
+    first_interview: "1st Interview", technical_interview: "Technical",
+    final_interview: "Final Interview", hired: "Hired",
+    rejected: "Rejected", withdrawn: "Withdrawn",
+  };
+  return map[status] ?? status;
+}
+
+function statusPillClass(status: string): string {
+  if (["hired"].includes(status)) return "text-green-600 border-green-600/20 bg-green-500/10";
+  if (["rejected", "withdrawn"].includes(status)) return "text-red-600 border-red-600/20 bg-red-500/10";
+  if (status.includes("interview")) return "text-blue-600 border-blue-600/20 bg-blue-500/10";
+  return "text-muted-foreground border-border bg-muted/30";
+}
+
 const STAGE_LABELS = ["Submitted", "Screening", "1st Interview", "Technical", "Final"];
 const STAGE_KEYS   = ["submitted", "screening", "first_interview", "technical_interview", "final_interview"];
 
@@ -246,6 +268,7 @@ export default function ApplicantDashboardPage() {
   const router = useRouter();
   const [session, setSession] = useState<StoredUser | null>(null);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [applications, setApplications] = useState<MyApplication[]>([]);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -259,6 +282,7 @@ export default function ApplicantDashboardPage() {
       getMyApplications().catch(() => [] as MyApplication[]),
     ]).then(([jobList, myApps]) => {
       setJobs(jobList);
+      setApplications(myApps);
       setAppliedJobIds(new Set(myApps.map((a) => a.job_posting_id)));
       // Show the most recently applied job for the tracker
       if (myApps.length > 0) {
@@ -269,6 +293,13 @@ export default function ApplicantDashboardPage() {
       }
     }).finally(() => setLoading(false));
   }, []);
+
+  const recentApplications = useMemo(() =>
+    [...applications].sort((a, b) => new Date(b.applied_at).getTime() - new Date(a.applied_at).getTime()).slice(0, 5),
+    [applications]
+  );
+  const activeCount = applications.filter(a => !["rejected", "hired", "withdrawn"].includes(a.status)).length;
+  const interviewCount = applications.filter(a => a.status.includes("interview")).length;
 
   useWelcomeToast(session?.name || "Applicant", "Candidate Portal");
 
@@ -485,10 +516,11 @@ export default function ApplicantDashboardPage() {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </>
+        )}
+      </div>
 
-        <Card className="xl:col-span-2 border-border shadow-sm bg-card overflow-hidden">
+      <Card className="border-border shadow-sm bg-card overflow-hidden">
           <CardHeader className="pb-4 bg-[linear-gradient(145deg,rgba(23,37,84,0.09),rgba(15,118,110,0.06))] border-b border-border/70">
             <p className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Application Feed</p>
             <CardTitle className="text-lg font-bold tracking-tight">Recent Applications</CardTitle>
@@ -529,7 +561,6 @@ export default function ApplicantDashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
       {/* Application form modal */}
       {applyingJob && (
@@ -555,12 +586,12 @@ export default function ApplicantDashboardPage() {
   );
 }
 
-function StepItem({ icon, label, active, completed, current }: {
-  icon: React.ReactNode;
+function MetricCard({ label, value, helper, icon, inverted }: {
   label: string;
-  active: boolean;
-  completed: boolean;
-  current: boolean;
+  value: string;
+  helper: string;
+  icon: React.ReactNode;
+  inverted?: boolean;
 }) {
   return (
     <div className={`rounded-xl border p-4 ${inverted ? "border-white/20 bg-white/10 backdrop-blur" : "border-border bg-muted/20"}`}>
@@ -572,6 +603,29 @@ function StepItem({ icon, label, active, completed, current }: {
       </div>
       <p className={`text-2xl font-bold tracking-tight ${inverted ? "text-white" : "text-foreground"}`}>{value}</p>
       <p className={`text-xs mt-1 ${inverted ? "text-white/70" : "text-muted-foreground"}`}>{helper}</p>
+    </div>
+  );
+}
+
+function StepItem({ icon, label, active, completed, current }: {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  completed: boolean;
+  current: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 relative z-10">
+      <div className={`h-9 w-9 rounded-full border-2 flex items-center justify-center transition-all
+        ${completed ? "bg-primary border-primary text-primary-foreground" :
+          current ? "bg-background border-primary text-primary" :
+          "bg-background border-border text-muted-foreground"}`}>
+        {icon}
+      </div>
+      <span className={`text-[10px] font-bold uppercase tracking-widest text-center max-w-[72px] leading-tight
+        ${active ? "text-foreground" : "text-muted-foreground"}`}>
+        {label}
+      </span>
     </div>
   );
 }

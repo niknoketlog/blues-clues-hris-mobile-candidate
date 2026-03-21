@@ -59,6 +59,16 @@ export class JobsService {
   async findAllPostings(companyId: string) {
     const supabase = this.supabaseService.getClient();
 
+    // Auto-close any open postings whose closes_at has passed
+    const now = new Date().toISOString();
+    await supabase
+      .from('job_postings')
+      .update({ status: 'closed' })
+      .eq('company_id', companyId)
+      .eq('status', 'open')
+      .not('closes_at', 'is', null)
+      .lt('closes_at', now);
+
     const { data, error } = await supabase
       .from('job_postings')
       .select('*')

@@ -764,10 +764,13 @@ export default function AdminUsersPage() {
   const [confirmDeact, setConfirmDeact]   = useState<Employee | null>(null);
   const [showFilter, setShowFilter]       = useState(false);
   const [statusFilter, setStatusFilter]   = useState<Set<string>>(new Set());
+  const [deptFilter, setDeptFilter]       = useState<string | null>(null);
   const filterRef                         = useRef<HTMLDivElement>(null);
   const [newDeptName, setNewDeptName]     = useState("");
   const [deptLoading, setDeptLoading]     = useState(false);
   const [manageDept, setManageDept]       = useState<Department | null>(null);
+  const [showDeptPanel, setShowDeptPanel] = useState(false);
+  const [now, setNow]                     = useState(Date.now());
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -885,20 +888,6 @@ export default function AdminUsersPage() {
       toast.success(`${employee.first_name}'s account reactivated as ${nextStatus.toLowerCase()}.`);
     } catch (err: any) {
       toast.error(err?.message || "Failed to reactivate account.");
-    }
-  };
-
-  const handleResendInvite = async (employee: Employee) => {
-    try {
-      const res = await apiFetch<{ message: string; invite_expires_at: string }>(
-        `/users/${employee.user_id}/resend-invite`, { method: "PATCH" }
-      );
-      setEmployees(prev => prev.map(e =>
-        e.user_id === employee.user_id ? { ...e, invite_expires_at: res.invite_expires_at } : e
-      ));
-      toast.success(`Invite resent to ${employee.email}.`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to resend invite.");
     }
   };
 
@@ -1095,7 +1084,7 @@ export default function AdminUsersPage() {
             <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
               <Download className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="h-9 gap-1.5 shrink-0" onClick={() => setShowDeptPanel(true)}>
+            <Button variant="outline" className="h-9 gap-1.5 shrink-0" onClick={() => document.getElementById("dept-section")?.scrollIntoView({ behavior: "smooth" })}>
               <Building2 className="h-4 w-4" /> Departments
             </Button>
             <Button className="h-9 gap-1.5 shrink-0" onClick={() => setShowAdd(true)}>
@@ -1181,7 +1170,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Department Management */}
-      <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+      <div id="dept-section" className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
             <h2 className="font-bold text-base">Department Management</h2>
