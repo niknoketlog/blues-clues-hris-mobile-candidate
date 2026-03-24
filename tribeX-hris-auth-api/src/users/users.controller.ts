@@ -65,7 +65,7 @@ export class UsersController {
   ) {
     if (!name?.trim())
       throw new BadRequestException('Department name is required.');
-    return this.usersService.createDepartment(name.trim(), req.user.company_id);
+    return this.usersService.createDepartment(name.trim(), req.user.company_id, req.user.sub_userid);
   }
 
   @Get('stats')
@@ -92,14 +92,14 @@ export class UsersController {
   ) {
     if (!name?.trim())
       throw new BadRequestException('Department name is required.');
-    return this.usersService.renameDepartment(id, name.trim(), req.user.company_id);
+    return this.usersService.renameDepartment(id, name.trim(), req.user.company_id, req.user.sub_userid);
   }
 
   @UseGuards(RolesGuard)
   @Roles(...ADMIN_ONLY)
   @Delete('departments/:id')
   async deleteDepartment(@Param('id') id: string, @Req() req: any) {
-    return this.usersService.deleteDepartment(id, req.user.company_id);
+    return this.usersService.deleteDepartment(id, req.user.company_id, req.user.sub_userid);
   }
 
   @Get('companies')

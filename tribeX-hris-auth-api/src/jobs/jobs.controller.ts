@@ -58,6 +58,13 @@ export class JobsController {
     return this.jobsService.getMyApplications(req.user.sub_userid);
   }
 
+  @Get('applicant/my-applications/:applicationId')
+  @UseGuards(ApplicantJwtAuthGuard)
+  @ApiOperation({ summary: 'Applicant: Get own application detail with answers' })
+  getMyApplicationDetail(@Param('applicationId') applicationId: string, @Req() req: any) {
+    return this.jobsService.getMyApplicationDetail(applicationId, req.user.sub_userid);
+  }
+
   // ---------------------------------------------------------------------------
   // HR APPLICATION DETAIL — must be before /:id to avoid param collision
   // ---------------------------------------------------------------------------

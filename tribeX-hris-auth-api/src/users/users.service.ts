@@ -654,7 +654,7 @@ export class UsersService {
     return data ?? [];
   }
 
-  async createDepartment(name: string, companyId: string) {
+  async createDepartment(name: string, companyId: string, performedBy: string) {
     const supabase = this.supabaseService.getClient();
     const year = new Date().getFullYear();
 
@@ -668,7 +668,13 @@ export class UsersService {
         .select('department_id, department_name')
         .single();
 
-      if (!error) return data;
+      if (!error) {
+        await this.auditService.log(
+          `Department created: "${name}" (ID: ${data.department_id})`,
+          performedBy,
+        );
+        return data;
+      }
       if ((error as any).code !== '23505') throw new Error(error.message);
       // 23505 = unique violation on department_id, retry with new random
     }
@@ -678,7 +684,7 @@ export class UsersService {
     );
   }
 
-  async renameDepartment(id: string, name: string, companyId: string) {
+  async renameDepartment(id: string, name: string, companyId: string, performedBy: string) {
     const supabase = this.supabaseService.getClient();
     const { data, error } = await supabase
       .from('department')
@@ -689,10 +695,14 @@ export class UsersService {
       .single();
     if (error) throw new Error(error.message);
     if (!data) throw new NotFoundException('Department not found.');
+    await this.auditService.log(
+      `Department renamed to "${name}" (ID: ${id})`,
+      performedBy,
+    );
     return data;
   }
 
-  async deleteDepartment(id: string, companyId: string) {
+  async deleteDepartment(id: string, companyId: string, performedBy: string) {
     const supabase = this.supabaseService.getClient();
     // Unassign all users in this department first
     await supabase
@@ -707,6 +717,10 @@ export class UsersService {
       .eq('department_id', id)
       .eq('company_id', companyId);
     if (error) throw new Error(error.message);
+    await this.auditService.log(
+      `Department deleted (ID: ${id})`,
+      performedBy,
+    );
     return { deleted: true };
   }
 

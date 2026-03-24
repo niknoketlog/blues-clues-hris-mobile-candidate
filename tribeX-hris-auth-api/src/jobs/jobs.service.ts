@@ -413,6 +413,35 @@ export class JobsService {
     return data;
   }
 
+  async getMyApplicationDetail(applicationId: string, applicantId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    const { data: app, error } = await supabase
+      .from('job_applications')
+      .select(`
+        application_id, status, applied_at, job_posting_id,
+        applicant_profile (first_name, last_name, email, phone_number, applicant_code),
+        job_postings (title, description, location, employment_type, salary_range, status, posted_at, closes_at)
+      `)
+      .eq('application_id', applicationId)
+      .eq('applicant_id', applicantId)
+      .maybeSingle();
+
+    if (error) throw new InternalServerErrorException(error.message);
+    if (!app) throw new NotFoundException('Application not found');
+
+    const { data: answers } = await supabase
+      .from('applicant_answers')
+      .select(`
+        answer_id, answer_value,
+        application_questions (question_id, question_text, question_type, options, sort_order)
+      `)
+      .eq('application_id', applicationId)
+      .order('application_questions(sort_order)');
+
+    return { ...app, answers: answers ?? [] };
+  }
+
   async getMyApplications(applicantId: string) {
     const supabase = this.supabaseService.getClient();
 
