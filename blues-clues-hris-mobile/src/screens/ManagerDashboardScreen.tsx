@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
+import { GradientHero } from "../components/GradientHero";
 import { TimekeepingTable, TimekeepingLog } from "../components/TimekeepingTable";
 import { authFetch } from "../services/auth";
 import { API_BASE_URL } from "../lib/api";
@@ -188,7 +189,7 @@ export function ManagerDashboardScreen() {
             role="manager"
             userName={session.name}
             email={session.email}
-            activeScreen="Timekeeping"
+            activeScreen="Dashboard"
             navigation={navigation}
           />
         )}
@@ -199,7 +200,7 @@ export function ManagerDashboardScreen() {
               role="manager"
               userName={session.name}
               email={session.email}
-              activeScreen="Timekeeping"
+              activeScreen="Dashboard"
               navigation={navigation}
             />
           )}
@@ -209,13 +210,11 @@ export function ManagerDashboardScreen() {
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.heroCard}>
+            <GradientHero>
               <Text style={styles.eyebrow}>Manager Portal</Text>
-              <Text style={styles.title}>Timekeeping Logs</Text>
+              <Text style={styles.title}>Welcome, {session.name.split(" ")[0]}</Text>
               <Text style={styles.subtitle}>
-                Review daily attendance records of all employees under your
-                department, including time in, time out, total hours, and
-                status.
+                Review daily attendance records and manage your team from one place.
               </Text>
               <Pressable
                 style={styles.refreshBtn}
@@ -235,7 +234,7 @@ export function ManagerDashboardScreen() {
                   </>
                 )}
               </Pressable>
-            </View>
+            </GradientHero>
 
             <View style={styles.summaryRow}>
               {summaryCards.map((card) => (
@@ -245,6 +244,17 @@ export function ManagerDashboardScreen() {
                   <Text style={styles.summaryHelper}>{card.helper}</Text>
                 </View>
               ))}
+            </View>
+
+            {/* Quick Actions */}
+            <View style={styles.quickRow}>
+              <Pressable
+                style={styles.quickCard}
+                onPress={() => navigation.replace("ManagerTeam", { session })}
+              >
+                <Text style={styles.quickTitle}>Team Directory →</Text>
+                <Text style={styles.quickSub}>View all team members and their status.</Text>
+              </Pressable>
             </View>
 
             {error ? (
@@ -291,17 +301,16 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   heroCard: {
-    backgroundColor: "#0F2D7A",
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "800",
-    color: "rgba(255,255,255,0.75)",
+    color: "rgba(255,255,255,0.65)",
     textTransform: "uppercase",
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     marginBottom: 8,
   },
   title: {
@@ -337,17 +346,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 16,
+    gap: 10,
   },
   summaryCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 18,
-    padding: 16,
-    minWidth: 160,
-    flexGrow: 1,
-    marginRight: 12,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 14,
+    minWidth: "45%",
+    flex: 1,
   },
   summaryLabel: {
     fontSize: 13,
@@ -365,6 +373,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     color: "#94A3B8",
+    fontWeight: "600",
+  },
+  quickRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  quickCard: {
+    flex: 1,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 14,
+    padding: 14,
+  },
+  quickTitle: {
+    color: "#1E3A8A",
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  quickSub: {
+    color: "#64748B",
+    fontSize: 12,
     fontWeight: "600",
   },
   errorCard: {

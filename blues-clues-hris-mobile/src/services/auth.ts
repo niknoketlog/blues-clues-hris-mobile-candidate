@@ -37,24 +37,18 @@ function parseJwt(token: string): any | null {
 }
 
 function roleNameToKey(roleName?: string): UserRole | null {
-  switch (roleName) {
-    case "HR Officer":
-    case "HR Manager":
-    case "HR Recruiter":
-    case "HR Interviewer":
-      return "hr";
-    case "Active Employee":
-      return "employee";
-    case "Applicant":
-      return "applicant";
-    case "System Admin":
-      return "system_admin";
-    case "Admin":
-      return "admin";
-    default:
-      if (roleName?.toLowerCase().includes("manager")) return "manager";
-      return null;
+  if (!roleName) return null;
+  const r = roleName.toLowerCase();
+
+  if (r.includes("system admin") || r === "admin") {
+    return roleName === "Admin" ? "admin" : "system_admin";
   }
+  if (r.includes("hr") || r === "recruiter" || r === "interviewer") return "hr";
+  if (r.includes("manager") || r === "group head") return "manager";
+  if (r.includes("employee")) return "employee";
+  if (r === "applicant") return "applicant";
+
+  return null;
 }
 
 function cookieStr(name: string, value: string): string {
@@ -98,11 +92,24 @@ async function getRefreshInfo(): Promise<{
 
 export async function login(identifier: string, password: string, rememberMe: boolean) {
   try {
-    const res = await fetch(`${API_BASE_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ identifier, password, rememberMe }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password, rememberMe }),
+        signal: controller.signal,
+      });
+    } catch (e: any) {
+      if (e?.name === "AbortError") {
+        return { ok: false as const, error: "Request timed out. The server may be starting up — please try again." };
+      }
+      throw e;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const data = await res.json().catch(() => ({}));
 
@@ -149,11 +156,24 @@ export async function applicantLogin(
   rememberMe: boolean,
 ): Promise<{ ok: true; user: UserSession } | { ok: false; error: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/applicants/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000);
+    let res: Response;
+    try {
+      res = await fetch(`${API_BASE_URL}/applicants/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      });
+    } catch (e: any) {
+      if (e?.name === "AbortError") {
+        return { ok: false as const, error: "Request timed out. The server may be starting up — please try again." };
+      }
+      throw e;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const data = await res.json().catch(() => ({}));
 

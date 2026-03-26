@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
+import { GradientHero } from "../components/GradientHero";
 import { authFetch } from "../services/auth";
 import { API_BASE_URL } from "../lib/api";
 
@@ -44,15 +45,13 @@ function deriveStatus(
   timeIn: string | null
 ): "present" | "late" | "absent" {
   if (!timeIn) return "absent";
-  const hour = parseInt(
-    parseTs(timeIn).toLocaleString("en-US", {
-      hour: "numeric",
-      hour12: false,
-      timeZone: "Asia/Manila",
-    }),
-    10
-  );
-  return hour >= 9 ? "late" : "present";
+  // Use direct UTC+8 offset arithmetic — avoids Intl API inconsistencies on Android
+  const utcMs = parseTs(timeIn).getTime();
+  const manilaMs = utcMs + 8 * 60 * 60 * 1000;
+  const hour = Math.floor((manilaMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const minute = Math.floor((manilaMs % (60 * 60 * 1000)) / (60 * 1000));
+  // Late if after 9:00 AM (9:00 exactly counts as on time)
+  return hour > 9 || (hour === 9 && minute > 0) ? "late" : "present";
 }
 
 function todayPHT(): string {
@@ -159,7 +158,7 @@ export function HROfficerTimekeepingScreen() {
       try {
         const [timesheetsRes, usersRes] = await Promise.all([
           authFetch(
-            `${API_BASE_URL}/timekeeping/timesheets?date=${date}`
+            `${API_BASE_URL}/timekeeping/timesheets?from=${date}&to=${date}`
           ),
           authFetch(`${API_BASE_URL}/users`),
         ]);
@@ -225,13 +224,13 @@ export function HROfficerTimekeepingScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Hero */}
-            <View style={styles.heroCard}>
+            <GradientHero style={styles.heroCard}>
               <Text style={styles.eyebrow}>HR Portal</Text>
               <Text style={styles.heroTitle}>Timekeeping</Text>
               <Text style={styles.heroSubtitle}>
                 View company-wide daily attendance records.
               </Text>
-            </View>
+            </GradientHero>
 
             {/* Date Navigation */}
             <View style={styles.dateNavCard}>
@@ -239,7 +238,7 @@ export function HROfficerTimekeepingScreen() {
                 style={styles.navBtn}
                 onPress={() => changeDate(-1)}
               >
-                <Ionicons name="chevron-back" size={20} color="#1F3F95" />
+                <Ionicons name="chevron-back" size={20} color="#1e3a8a" />
               </Pressable>
 
               <View style={styles.dateCenter}>
@@ -261,7 +260,7 @@ export function HROfficerTimekeepingScreen() {
                 <Ionicons
                   name="chevron-forward"
                   size={20}
-                  color={isToday ? "#CBD5E1" : "#1F3F95"}
+                  color={isToday ? "#CBD5E1" : "#1e3a8a"}
                 />
               </Pressable>
             </View>
@@ -302,7 +301,7 @@ export function HROfficerTimekeepingScreen() {
             {loading ? (
               <ActivityIndicator
                 size="large"
-                color="#1F3F95"
+                color="#1e3a8a"
                 style={{ marginTop: 24 }}
               />
             ) : roster.length === 0 ? (
@@ -386,7 +385,6 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   heroCard: {
-    backgroundColor: "#0F2D7A",
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,

@@ -14,7 +14,7 @@ import { MailService } from '../mail/mail.service';
 import { CreateApplicantDto } from './dto/create-applicant.dto';
 import { ApplicantLoginDto } from './dto/applicant-login.dto';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 function sha256(input: string) {
   return crypto.createHash('sha256').update(input).digest('hex');

@@ -11,8 +11,8 @@ export const Colors = {
   primaryBorder:   "#bfdbfe",  // border-primary/20
   primaryDisabled: "#93c5fd",  // disabled button state
 
-  // Sidebar
-  sidebarBg:       "#1e40af",  // sidebar background
+  // Sidebar — matches web globals.css --sidebar: #1e3a8a
+  sidebarBg:       "#1e3a8a",  // sidebar background
   sidebarActive:   "#2563eb",  // active menu item
 
   // Neutral / Text
@@ -22,7 +22,7 @@ export const Colors = {
   textPlaceholder: "#9ca3af",  // input placeholders, dim labels
 
   // Backgrounds
-  bgApp:           "#eff6ff",  // screen background
+  bgApp:           "#F1F5F9",  // screen background (slate-100 — matches web)
   bgCard:          "#ffffff",  // card/surface background
   bgMuted:         "#f9fafb",  // muted surface (table headers, inputs)
   bgSubtle:        "#f3f4f6",  // subtle surface (cancel buttons, tags)

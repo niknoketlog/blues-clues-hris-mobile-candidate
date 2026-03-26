@@ -161,7 +161,7 @@ export class AuthService {
       .select(
         'user_id, company_id, role_id, password_hash, email, username, first_name, last_name, start_date, account_status',
       )
-      .or(`email.eq."${identifier}",username.eq."${identifier}"`)
+      .or(`email.eq.${identifier},username.eq.${identifier}`)
       .maybeSingle<UserRow>();
 
     if (error) {
@@ -199,37 +199,21 @@ export class AuthService {
       throw new UnauthorizedException('Incorrect password. Please try again.');
     }
 
-    const { data: roleRow, error: roleError } = await supabase
-      .from('role')
-      .select('role_name')
-      .eq('role_id', user.role_id)
-      .single();
+    // Fetch role + company in parallel — neither depends on the other
+    const [
+      { data: roleRow, error: roleError },
+      { data: companydb, error: companyError },
+    ] = await Promise.all([
+      supabase.from('role').select('role_name').eq('role_id', user.role_id).single(),
+      supabase.from('company').select('company_name').eq('company_id', user.company_id).single(),
+    ]);
 
-    if (roleError || !roleRow)
-      throw new UnauthorizedException('Role not found');
-
-    const { data: companydb, error: companyError } = await supabase
-      .from('company')
-      .select('company_name')
-      .eq('company_id', user.company_id)
-      .single();
-
-    if (companyError || !companydb)
-      throw new UnauthorizedException('Company not found');
+    if (roleError || !roleRow) throw new UnauthorizedException('Role not found');
+    if (companyError || !companydb) throw new UnauthorizedException('Company not found');
 
     const login_id = crypto.randomUUID();
     const session_id = crypto.randomUUID();
 
-    await supabase.from('login_history').insert({
-      login_id,
-      role_id: String(user.role_id),
-      user_id: user.user_id,
-      ip_address: getIp(req),
-      browser_info: getBrowser(req),
-      status: 'SUCCESS',
-    });
-
-    // ✅ first_name and last_name now included
     const accessPayload = {
       type: 'access',
       sub_userid: user.user_id,
@@ -241,30 +225,34 @@ export class AuthService {
       last_name: user.last_name,
     };
 
-    const access_token = await this.jwtService.signAsync(accessPayload, {
-      expiresIn: '15m',
-    });
-
-    const refresh_token = await this.jwtService.signAsync(
-      {
-        type: 'refresh',
-        sub_userid: user.user_id,
-        role_id: user.role_id,
-        login_id,
-        session_id,
-      },
-      { expiresIn: rememberMe ? '30d' : '7d' },
-    );
+    const [access_token, refresh_token] = await Promise.all([
+      this.jwtService.signAsync(accessPayload, { expiresIn: '15m' }),
+      this.jwtService.signAsync(
+        { type: 'refresh', sub_userid: user.user_id, role_id: user.role_id, login_id, session_id },
+        { expiresIn: rememberMe ? '30d' : '7d' },
+      ),
+    ]);
 
     const decoded: any = this.jwtService.decode(refresh_token);
     const expires_at = new Date(decoded.exp * 1000).toISOString();
     const token_hash = sha256(refresh_token);
 
-    await supabase.from('refresh_session').insert({
-      user_id: user.user_id,
-      token_hash,
-      expires_at,
-    });
+    // Fire login_history + refresh_session inserts in parallel — neither blocks the response
+    await Promise.all([
+      supabase.from('login_history').insert({
+        login_id,
+        role_id: String(user.role_id),
+        user_id: user.user_id,
+        ip_address: getIp(req),
+        browser_info: getBrowser(req),
+        status: 'SUCCESS',
+      }),
+      supabase.from('refresh_session').insert({
+        user_id: user.user_id,
+        token_hash,
+        expires_at,
+      }),
+    ]);
 
     return { access_token, refresh_token };
   }
@@ -366,17 +354,23 @@ export class AuthService {
     if (user.account_status === 'Inactive')
       throw new UnauthorizedException('Account deactivated');
 
-    const { data: roleRow } = await supabase
+    const { data: roleRow, error: roleErr } = await supabase
       .from('role')
       .select('role_name')
       .eq('role_id', user.role_id)
       .single();
 
-    const { data: companydb } = await supabase
+    if (roleErr || !roleRow)
+      throw new UnauthorizedException('Role not found');
+
+    const { data: companydb, error: companyErr } = await supabase
       .from('company')
       .select('company_name')
       .eq('company_id', user.company_id)
       .single();
+
+    if (companyErr || !companydb)
+      throw new UnauthorizedException('Company not found');
 
     // ✅ first_name and last_name included in refresh too
     const accessPayload = {
@@ -384,8 +378,8 @@ export class AuthService {
       sub_userid: user.user_id,
       company_id: user.company_id,
       role_id: user.role_id,
-      role_name: roleRow?.role_name,
-      company_name: companydb?.company_name,
+      role_name: roleRow.role_name,
+      company_name: companydb.company_name,
       first_name: user.first_name,
       last_name: user.last_name,
     };

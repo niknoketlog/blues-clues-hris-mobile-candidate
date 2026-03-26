@@ -13,6 +13,7 @@ import {
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
 import { Header } from "../components/Header";
+import { GradientHero } from "../components/GradientHero";
 import { MetricCard } from "../components/MetricCard";
 import { Colors } from "../constants/colors";
 import { UserSession, authFetch } from "../services/auth";
@@ -104,11 +105,12 @@ export const HROfficerDashboardScreen = ({ route, navigation }: any) => {
           )}
 
           <ScrollView className="flex-1 px-4 py-4" showsVerticalScrollIndicator={false}>
-            <View style={{ backgroundColor: "#0F2D7A" }} className="rounded-2xl px-5 py-4 mb-4">
+            <GradientHero style={{ borderRadius: 16, padding: 0, marginBottom: 16 }}>
+            <View className="px-5 py-4">
               <View className="mb-3">
-                <Text className="text-white/80 text-[10px] font-bold uppercase tracking-widest">HR Control Center</Text>
-                <Text className="text-white text-xl font-bold mt-1 leading-7">Welcome, {session.name}</Text>
-                <Text className="text-white/85 text-xs mt-1.5 leading-5">
+                <Text className="text-white/70 text-[10px] font-bold uppercase tracking-widest">HR Portal</Text>
+                <Text className="text-white text-xl font-bold mt-1 leading-7">Welcome back, {session.name.split(" ")[0]}</Text>
+                <Text className="text-white/75 text-xs mt-1.5 leading-5">
                   Daily staffing visibility and recruitment shortcuts in one place.
                 </Text>
               </View>
@@ -150,6 +152,7 @@ export const HROfficerDashboardScreen = ({ route, navigation }: any) => {
                 </Pressable>
               </View>
             </View>
+            </GradientHero>
 
             <View className={`${isMobile ? "mb-3 gap-3" : "flex-row gap-3 mb-4"}`}>
               <View className="flex-1">
@@ -180,70 +183,68 @@ export const HROfficerDashboardScreen = ({ route, navigation }: any) => {
               />
             </View>
 
-            <View className="rounded-2xl bg-white shadow-sm mb-6 overflow-hidden relative">
-              <View style={{ backgroundColor: Colors.bgMuted, borderBottomColor: Colors.border }} className="px-4 pt-4 pb-3 border-b">
-                <Text style={{ color: Colors.textPrimary }} className="font-bold text-base">Employee Directory</Text>
-                <Text style={{ color: Colors.textMuted }} className="text-xs mt-0.5">All employees in your company</Text>
-                <View style={{ borderColor: Colors.border }} className="mt-3 flex-row items-center rounded-xl border bg-white px-3 py-2.5">
-                  <Text style={{ color: Colors.textPlaceholder }} className="mr-2">Search</Text>
-                  <TextInput
-                    value={search}
-                    onChangeText={setSearch}
-                    placeholder="Search employees..."
-                    placeholderTextColor={Colors.textPlaceholder}
-                    style={{ color: Colors.textPrimary }}
-                    className="flex-1 text-xs"
-                  />
+            {/* Employee Directory */}
+            <View style={{ backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 20, padding: 16, marginBottom: 24 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <View>
+                  <Text style={{ color: "#0F172A", fontSize: 17, fontWeight: "800" }}>Employee Directory</Text>
+                  <Text style={{ color: "#64748B", fontSize: 12, marginTop: 2 }}>All employees in your company</Text>
+                </View>
+                <View style={{ backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 }}>
+                  <Text style={{ color: "#1D4ED8", fontSize: 11, fontWeight: "800" }}>{employees.length} total</Text>
                 </View>
               </View>
 
-              <View style={{ backgroundColor: Colors.bgSubtle, borderBottomColor: Colors.border }} className="flex-row px-4 py-2 border-b">
-                <Text style={{ color: Colors.textPlaceholder }} className="flex-1 text-[9px] font-bold uppercase tracking-widest">Employee</Text>
-                <Text style={{ color: Colors.textPlaceholder }} className="w-16 text-[9px] font-bold uppercase tracking-widest">Status</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 14, backgroundColor: "#F8FAFC", paddingHorizontal: 12, marginBottom: 14, height: 44 }}>
+                <Text style={{ color: "#94A3B8", marginRight: 8, fontSize: 16 }}>⌕</Text>
+                <TextInput
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search employees..."
+                  placeholderTextColor="#94A3B8"
+                  style={{ flex: 1, color: "#0F172A", fontSize: 14 }}
+                />
               </View>
 
               {loading ? (
-                <View className="px-4 py-8 items-center">
-                  <ActivityIndicator color={Colors.primary} />
+                <View style={{ alignItems: "center", paddingVertical: 24 }}>
+                  <ActivityIndicator color="#2563EB" />
+                  <Text style={{ color: "#94A3B8", fontSize: 13, marginTop: 8 }}>Loading employees...</Text>
                 </View>
               ) : (
                 <>
                   {filtered.map((row) => {
                     const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ") || row.email;
                     const initials = (row.first_name?.charAt(0) ?? row.email.charAt(0)).toUpperCase();
+                    const avatarColors = ["#EFF6FF|#1D4ED8", "#F0FDF4|#16A34A", "#FEF3C7|#B45309", "#F5F3FF|#7C3AED", "#FFF1F2|#BE123C"];
+                    const colorPair = avatarColors[row.email.charCodeAt(0) % avatarColors.length].split("|");
                     return (
-                      <View key={row.user_id} style={{ borderBottomColor: Colors.bgSubtle }} className="flex-row items-center px-4 py-3 border-b">
-                        <View className="flex-1 flex-row items-center">
-                          <View style={{ backgroundColor: Colors.primaryLight, borderColor: Colors.primaryBorder }} className="h-9 w-9 rounded-full items-center justify-center mr-3 border">
-                            <Text style={{ color: Colors.primary }} className="font-bold text-sm">{initials}</Text>
-                          </View>
-                          <View className="flex-1">
-                            <Text style={{ color: Colors.textPrimary }} className="font-semibold text-sm">{fullName}</Text>
-                            <Text style={{ color: Colors.textPlaceholder }} className="text-[10px]">{row.email}</Text>
-                          </View>
+                      <View key={row.user_id} style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 14, padding: 12, marginBottom: 8, backgroundColor: "#FFFFFF" }}>
+                        <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: colorPair[0], alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                          <Text style={{ color: colorPair[1], fontWeight: "800", fontSize: 15 }}>{initials}</Text>
                         </View>
-                        <View className="w-16 items-end">
-                          <View style={{ backgroundColor: Colors.success + "22" }} className="px-2 py-0.5 rounded-full">
-                            <Text style={{ color: Colors.successText }} className="text-[9px] font-bold uppercase">Active</Text>
-                          </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: "#0F172A", fontSize: 14, fontWeight: "700" }}>{fullName}</Text>
+                          <Text style={{ color: "#64748B", fontSize: 12, marginTop: 2 }}>{row.email}</Text>
+                        </View>
+                        <View style={{ backgroundColor: "#DCFCE7", borderWidth: 1, borderColor: "#BBF7D0", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 }}>
+                          <Text style={{ color: "#166534", fontSize: 10, fontWeight: "800" }}>Active</Text>
                         </View>
                       </View>
                     );
                   })}
 
                   {filtered.length === 0 && (
-                    <View className="px-4 py-8 items-center">
-                      <Text style={{ color: Colors.textPlaceholder }} className="text-sm">No employees found.</Text>
+                    <View style={{ alignItems: "center", paddingVertical: 24 }}>
+                      <Text style={{ color: "#94A3B8", fontSize: 13 }}>No employees found.</Text>
                     </View>
                   )}
                 </>
               )}
 
-              <View style={{ backgroundColor: Colors.bgMuted }} className="px-4 py-3">
-                <Text style={{ color: Colors.textPlaceholder }} className="text-[10px] font-bold uppercase tracking-widest">
-                  Showing {filtered.length} of {employees.length} employees
-                </Text>
-              </View>
+              <Text style={{ color: "#94A3B8", fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.7, paddingTop: 6 }}>
+                Showing {filtered.length} of {employees.length} employees
+              </Text>
             </View>
           </ScrollView>
         </View>

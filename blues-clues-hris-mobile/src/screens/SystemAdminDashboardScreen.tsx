@@ -12,35 +12,26 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
+import { GradientHero } from "../components/GradientHero";
 import { authFetch } from "../services/auth";
 import { API_BASE_URL } from "../lib/api";
 
-const RECENT_ACTIVITY = [
-  {
-    id: "1",
-    title: "New HR Officer account created",
-    subtitle: "Recruitment and Onboarding access assigned",
-    time: "10 mins ago",
-  },
-  {
-    id: "2",
-    title: "Invite link resent",
-    subtitle: "User activation email was sent again",
-    time: "32 mins ago",
-  },
-  {
-    id: "3",
-    title: "Billing plan updated",
-    subtitle: "Subscription seats were adjusted",
-    time: "1 hour ago",
-  },
-  {
-    id: "4",
-    title: "User account locked",
-    subtitle: "Temporary restriction applied by system admin",
-    time: "3 hours ago",
-  },
-];
+type AuditLog = {
+  log_id: string;
+  action: string;
+  entity?: string;
+  performed_by_name?: string;
+  timestamp: string;
+};
+
+function timeAgo(ts: string): string {
+  const date = new Date(ts.includes("Z") || ts.includes("+") ? ts : ts + "Z");
+  const diff = (Date.now() - date.getTime()) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
 
 type Stats = { total: number; active: number; pending: number; inactive: number };
 
@@ -52,14 +43,22 @@ export function SystemAdminDashboardScreen() {
   const isMobile = width < 900;
   const [stats, setStats] = useState<Stats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await authFetch(`${API_BASE_URL}/users/stats`);
-        const data = await res.json().catch(() => ({}));
-        if (!cancelled) setStats(data);
+        const [statsRes, auditRes] = await Promise.all([
+          authFetch(`${API_BASE_URL}/users/stats`),
+          authFetch(`${API_BASE_URL}/audit/logs?limit=5`),
+        ]);
+        const statsData = await statsRes.json().catch(() => ({}));
+        const auditData = await auditRes.json().catch(() => []);
+        if (!cancelled) {
+          setStats(statsData);
+          setAuditLogs(Array.isArray(auditData) ? auditData : (auditData?.logs ?? []));
+        }
       } catch {
         // leave null — fall back to dashes
       } finally {
@@ -105,14 +104,13 @@ export function SystemAdminDashboardScreen() {
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <View style={[styles.heroCard, { backgroundColor: "#0F2D7A" }]}>
-              <Text style={[styles.eyebrow, { color: "rgba(255,255,255,0.75)" }]}>System Admin</Text>
+            <GradientHero style={styles.heroCard}>
+              <Text style={[styles.eyebrow, { color: "rgba(255,255,255,0.65)" }]}>System Admin</Text>
               <Text style={[styles.title, { color: "#FFFFFF" }]}>Admin Dashboard</Text>
-              <Text style={[styles.subtitle, { color: "rgba(255,255,255,0.78)" }]}>
-                Manage user access, HR lifecycle permissions, invite links, and
-                subscription operations from one place.
+              <Text style={[styles.subtitle, { color: "rgba(255,255,255,0.75)" }]}>
+                Manage user access, invite links, audit logs, and subscription operations.
               </Text>
-            </View>
+            </GradientHero>
 
             <View style={styles.summaryRow}>
               {loadingStats ? (
@@ -129,24 +127,39 @@ export function SystemAdminDashboardScreen() {
             </View>
 
             <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>Recent Admin Activity</Text>
-
-              {RECENT_ACTIVITY.map((item, index) => (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.activityRow,
-                    index !== RECENT_ACTIVITY.length - 1 && styles.activityDivider,
-                  ]}
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Recent Activity</Text>
+                <Pressable
+                  onPress={() => navigation.navigate("SystemAdminAuditLogs", { session })}
                 >
-                  <View style={styles.activityDot} />
-                  <View style={styles.activityTextWrap}>
-                    <Text style={styles.activityTitle}>{item.title}</Text>
-                    <Text style={styles.activitySubtitle}>{item.subtitle}</Text>
+                  <Text style={styles.sectionLink}>View All →</Text>
+                </Pressable>
+              </View>
+
+              {auditLogs.length === 0 ? (
+                <Text style={styles.activityEmpty}>
+                  {loadingStats ? "Loading..." : "No recent activity."}
+                </Text>
+              ) : (
+                auditLogs.map((log, index) => (
+                  <View
+                    key={log.log_id}
+                    style={[
+                      styles.activityRow,
+                      index !== auditLogs.length - 1 && styles.activityDivider,
+                    ]}
+                  >
+                    <View style={styles.activityDot} />
+                    <View style={styles.activityTextWrap}>
+                      <Text style={styles.activityTitle}>{log.action}</Text>
+                      <Text style={styles.activitySubtitle}>
+                        {[log.entity, log.performed_by_name].filter(Boolean).join(" · ")}
+                      </Text>
+                    </View>
+                    <Text style={styles.activityTime}>{timeAgo(log.timestamp)}</Text>
                   </View>
-                  <Text style={styles.activityTime}>{item.time}</Text>
-                </View>
-              ))}
+                ))
+              )}
             </View>
 
             <View style={styles.sectionCard}>
@@ -160,6 +173,16 @@ export function SystemAdminDashboardScreen() {
                   <Text style={styles.quickActionTitle}>Users →</Text>
                   <Text style={styles.quickActionText}>
                     Create accounts, assign roles, and review pending users.
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={({ pressed }) => [styles.quickActionCard, pressed && { opacity: 0.75 }]}
+                  onPress={() => navigation.navigate("SystemAdminAuditLogs", { session })}
+                >
+                  <Text style={styles.quickActionTitle}>Audit Logs →</Text>
+                  <Text style={styles.quickActionText}>
+                    Review all system events and user activity history.
                   </Text>
                 </Pressable>
 
@@ -234,17 +257,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 16,
+    gap: 10,
   },
   summaryCard: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    borderRadius: 18,
-    padding: 16,
-    minWidth: 160,
-    flexGrow: 1,
-    marginRight: 12,
-    marginBottom: 12,
+    borderRadius: 16,
+    padding: 14,
+    minWidth: "45%",
+    flex: 1,
   },
   summaryLabel: {
     fontSize: 13,
@@ -272,11 +294,27 @@ const styles = StyleSheet.create({
     padding: 18,
     marginBottom: 16,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "800",
     color: "#0F172A",
-    marginBottom: 16,
+  },
+  sectionLink: {
+    color: "#1E3A8A",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  activityEmpty: {
+    color: "#94A3B8",
+    fontSize: 13,
+    fontWeight: "600",
+    paddingVertical: 8,
   },
   activityRow: {
     flexDirection: "row",
@@ -317,8 +355,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   quickActionsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "column",
+    gap: 10,
   },
   quickActionCard: {
     backgroundColor: "#F8FAFC",

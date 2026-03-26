@@ -12,6 +12,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
+import { GradientHero } from "../components/GradientHero";
 
 const PLAN_CARDS = [
   {
@@ -100,14 +101,14 @@ export function SystemAdminBillingScreen() {
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <View style={[styles.heroCard, { backgroundColor: "#0F2D7A" }]}>
+            <GradientHero style={styles.heroCard}>
               <Text style={[styles.eyebrow, { color: "rgba(255,255,255,0.75)" }]}>System Admin</Text>
               <Text style={[styles.title, { color: "#FFFFFF" }]}>Billing & Subscription</Text>
               <Text style={[styles.subtitle, { color: "rgba(255,255,255,0.78)" }]}>
                 Review subscription plan details, seats, renewal information,
                 and recent billing activity.
               </Text>
-            </View>
+            </GradientHero>
 
             <View style={styles.summaryRow}>
               {PLAN_CARDS.map((card) => (

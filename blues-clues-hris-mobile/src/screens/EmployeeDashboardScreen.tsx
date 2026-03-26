@@ -12,6 +12,7 @@ import {
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
 import { Header } from "../components/Header";
+import { GradientHero } from "../components/GradientHero";
 import { Colors } from "../constants/colors";
 import { UserSession } from "../services/auth";
 
@@ -104,31 +105,40 @@ export const EmployeeDashboardScreen = ({ route, navigation }: any) => {
           )}
 
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={styles.hero}>
-              <Text style={styles.heroEyebrow}>Employee Dashboard</Text>
-              <Text style={styles.heroTitle}>Welcome, {session.name}</Text>
-              <Text style={styles.heroSub}>Track onboarding, finish pending tasks, and keep your profile details visible.</Text>
+            <GradientHero style={{ marginBottom: 0 }}>
+              <Text style={styles.heroEyebrow}>Staff Portal</Text>
+              <Text style={styles.heroTitle}>Welcome back, {session.name.split(" ")[0]}</Text>
+              <Text style={styles.heroSub}>Complete your onboarding tasks and track your progress below.</Text>
 
               <View style={styles.progressWrap}>
                 <View style={styles.progressTopRow}>
-                  <Text style={styles.progressLabel}>Onboarding Completion</Text>
+                  <Text style={styles.progressLabel}>Onboarding Progress</Text>
                   <Text style={styles.progressValue}>{progress}%</Text>
                 </View>
                 <View style={styles.progressTrack}>
                   <View style={[styles.progressBar, { width: `${progress}%` }]} />
                 </View>
               </View>
-            </View>
+            </GradientHero>
 
             <View style={styles.metricsRow}>
-              <StatTile label="Completed" value={`${completedCount}`} helper="done" />
-              <StatTile label="Pending" value={`${pendingCount}`} helper="to do" />
-              <StatTile label="Locked" value={`${lockedCount}`} helper="blocked" />
+              <StatTile label="Completed" value={`${completedCount}`} helper="done" accent="#16a34a" />
+              <StatTile label="Pending" value={`${pendingCount}`} helper="to do" accent="#d97706" />
+              <StatTile label="Locked" value={`${lockedCount}`} helper="blocked" accent="#64748b" />
             </View>
 
+            {/* Quick Actions */}
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>Next Action</Text>
-              <Text style={styles.cardSub}>{nextTask}</Text>
+              <Text style={styles.cardTitle}>Quick Actions</Text>
+              <View style={styles.quickActionsRow}>
+                <Pressable
+                  style={styles.quickAction}
+                  onPress={() => navigation.replace("EmployeeTimekeeping", { session })}
+                >
+                  <Text style={styles.quickActionLabel}>Clock In / Out</Text>
+                  <Text style={styles.quickActionSub}>Timekeeping</Text>
+                </Pressable>
+              </View>
             </View>
 
             <View style={styles.card}>
@@ -138,12 +148,12 @@ export const EmployeeDashboardScreen = ({ route, navigation }: any) => {
                 <Text style={styles.profileValue}>{session.name}</Text>
               </View>
               <View style={styles.profileRow}>
-                <Text style={styles.profileLabel}>Role</Text>
-                <Text style={styles.profileValue}>Internal Staff</Text>
+                <Text style={styles.profileLabel}>Email</Text>
+                <Text style={styles.profileValue}>{session.email || "—"}</Text>
               </View>
               <View style={styles.profileRowNoBorder}>
-                <Text style={styles.profileLabel}>Member Since</Text>
-                <Text style={styles.profileValue}>February 2026</Text>
+                <Text style={styles.profileLabel}>Role</Text>
+                <Text style={styles.profileValue}>Internal Staff</Text>
               </View>
             </View>
 
@@ -201,11 +211,11 @@ export const EmployeeDashboardScreen = ({ route, navigation }: any) => {
   );
 };
 
-function StatTile({ label, value, helper }: { label: string; value: string; helper: string }) {
+function StatTile({ label, value, helper, accent = "#111827" }: { label: string; value: string; helper: string; accent?: string }) {
   return (
-    <View style={styles.statTile}>
+    <View style={[styles.statTile, { borderTopColor: accent, borderTopWidth: 3 }]}>
       <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+      <Text style={[styles.statValue, { color: accent }]}>{value}</Text>
       <Text style={styles.statHelper}>{helper}</Text>
     </View>
   );
@@ -230,10 +240,34 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   hero: {
-    backgroundColor: "#0F2D7A",
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+  },
+  quickActionsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  quickAction: {
+    flex: 1,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  quickActionLabel: {
+    color: "#1E3A8A",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  quickActionSub: {
+    color: "#64748B",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 2,
   },
   heroEyebrow: {
     color: "rgba(255,255,255,0.78)",

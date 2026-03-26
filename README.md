@@ -1,20 +1,21 @@
 # BluesClues HRIS
 
-A monorepo containing the authentication API and manager/applicant dashboard for the BluesClues HR Information System. Purely para sa devs lang to check progress ng lahat and para madali iconnect front at backend
+A monorepo containing the authentication API and manager/applicant dashboard for the BluesClues HR Information System. Purely para sa devs lang to check progress ng lahat and para madali iconnect front at backend.
 
 GDocs Link:
 https://docs.google.com/document/d/1QbcjtozYNobPMb_ffn4uEWH5RwJ_TpOB4eTlkHVu4oE/edit?tab=t.0
 
-**Stack:** NestJS 11 · Next.js 16 · Supabase · JWT · Tailwind CSS · shadcn/ui
+**Stack:** NestJS 11 · Next.js 16 · React Native (Expo) · Supabase · JWT · Tailwind CSS · shadcn/ui
 
 ---
 
 ## Repository Structure
 
 ```
-supabase-auth-to-JWT-bluetribe/
-├── tribeX-hris-auth-api/        # NestJS backend — runs on port 5000
-└── frontend/manager-dashboard/  # Next.js frontend — runs on port 3000
+blues-clues-hris-backend-frontend-mobile/
+├── tribeX-hris-auth-api/                          # NestJS backend — runs on port 5000
+├── frontend/blues-clues-hris-frontend-web/        # Next.js frontend — runs on port 3000
+└── blues-clues-hris-mobile/                       # Expo React Native app
 ```
 
 ---
@@ -25,100 +26,211 @@ supabase-auth-to-JWT-bluetribe/
 
 - Node.js 20+
 - npm
+- Expo Go app (for mobile)
 
-### 1. Clone the repo
+---
+
+### Step 1 — Clone and pull latest
 
 ```bash
 git clone https://github.com/dreiiiiim/blues-clues-hris-backend-frontend-mobile.git
 cd blues-clues-hris-backend-frontend-mobile
-```
-
-### 2. Set up the backend
-
-```bash
-cd tribeX-hris-auth-api
-npm install
-cp .env.example .env   # then fill in your values (see Environment Variables below)
-npm run start:dev
-```
-
-API runs at `http://localhost:5000`
-Swagger docs at `http://localhost:5000/api/docs`
-
-### 3. Set up the frontend
-
-Open a second terminal:
-
-```bash
-cd frontend
-cd blues-clues-hris-frontend-web
-npm install
-npm run dev
-```
-
-App runs at `http://localhost:3000`
-
----
-
-### 4. Set up the MOBILE ONLY
-
-Open a third terminal:
-
-```bash
-cd blues-clues-hris-mobile
-npm install
-npm install
-npx expo start -c
-
-SCAN QR CODE USING EXPO GO APP
-```
-
-### 5. IMPORTANT
-
-ALWAYS DO THIS BEFORE ADDING FEATURES ETC.
-
-```bash
 git pull origin main
 ```
 
-## MORE INFO LANG PERO NASA ABOVE LANG NAMAN NEED PARA MARUN
+> Always pull before starting work to avoid conflicts.
 
-## Environment Variables
+---
 
-Create `tribeX-hris-auth-api/.env` based on `.env.example`:
+### Step 2 — Set up environment files
 
-| Variable                    | Description                                       | Required   |
-| --------------------------- | ------------------------------------------------- | ---------- |
-| `PORT`                      | Port for the API server (default: `5000`)         | No         |
-| `SUPABASE_URL`              | Your Supabase project URL                         | Yes        |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (admin access)          | Yes        |
-| `SUPABASE_ANON_KEY`         | Supabase anon/public key                          | Yes        |
-| `JWT_SECRET`                | Secret used to sign JWT tokens                    | Yes        |
-| `CORS_ORIGINS`              | Comma-separated allowed origins (production only) | Production |
+**The main branch connects to the deployed Railway backend by default.**
+If you are adding features that touch the backend, switch to localhost (see [Switching Environments](#switching-environments) below).
 
-> **Never commit `.env` files.** They are in `.gitignore`. Ask a team member for the values.
+#### Backend — create `tribeX-hris-auth-api/.env`
+
+```env
+PORT=5000
+SUPABASE_URL=https://xvofqboilmzlhrnkyyif.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2b2ZxYm9pbG16bGhybmt5eWlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mjk2MTA0NCwiZXhwIjoyMDg4NTM3MDQ0fQ.DYBGofSYAG_bsv9_bYo8ZvhsO4lx4W5wcfjWtXMoBxg
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2b2ZxYm9pbG16bGhybmt5eWlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjEwNDQsImV4cCI6MjA4ODUzNzA0NH0.b6T6Auv69Hrxs2klwZpv8Vg1HfqRTzQI_BSb6ppbCKc
+JWT_SECRET=sc078c0eaf7b200f45077475fabba72e2f1d0947992d53619cac9f77e6df32820
+MAIL_USER=bluesclueshris@gmail.com
+MAIL_PASS=ulvr ecfb ghbj zmnk
+APP_URL=http://localhost:3000
+```
+
+#### Frontend — create `frontend/blues-clues-hris-frontend-web/.env.local`
+
+For local development (pointing to localhost backend):
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/tribeX/auth/v1
+```
+
+#### Mobile — edit `blues-clues-hris-mobile/.env`
+
+For local development (replace IP with your machine's Wi-Fi IPv4 from `ipconfig`):
+```env
+EXPO_PUBLIC_API_BASE_URL=http://192.168.x.x:5000/api/tribeX/auth/v1
+```
+
+---
+
+### Step 3 — Install dependencies and run
+
+Open **three separate terminals**:
+
+**Terminal 1 — Backend:**
+```bash
+cd tribeX-hris-auth-api
+npm install
+npm run start:dev
+# API at http://localhost:5000
+# Swagger docs at http://localhost:5000/api/docs
+```
+
+**Terminal 2 — Frontend:**
+```bash
+cd frontend/blues-clues-hris-frontend-web
+npm install
+npm run dev
+# App at http://localhost:3000
+```
+
+**Terminal 3 — Mobile:**
+```bash
+cd blues-clues-hris-mobile
+npm install
+npx expo start -c
+# Scan the QR code with the Expo Go app on your phone
+# Your phone must be on the same Wi-Fi network as your machine
+```
+
+---
+
+## Switching Environments
+
+The project has two environments: **localhost** (local dev) and **Railway** (deployed production).
+
+### When to use which
+
+| Scenario | Use |
+|---|---|
+| Testing UI changes only | Railway — no need to run backend locally |
+| Adding/changing backend endpoints | Localhost — run the backend yourself |
+| Demoing or reviewing a PR | Railway |
+| Testing timekeeping, auth, or any API feature | Localhost |
+
+---
+
+### Switching the Frontend
+
+Edit `frontend/blues-clues-hris-frontend-web/.env.local`:
+
+**→ Localhost:**
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/tribeX/auth/v1
+```
+
+**→ Railway:**
+```env
+NEXT_PUBLIC_API_BASE_URL=https://blues-clues-hris-backend-frontend-mobile-production.up.railway.app/api/tribeX/auth/v1
+```
+
+Then restart the dev server: `npm run dev`
+
+> If `.env.local` does not exist, the frontend falls back to `localhost:5000` automatically.
+
+---
+
+### Switching the Mobile App
+
+Edit `blues-clues-hris-mobile/.env`:
+
+**→ Localhost** (find your Wi-Fi IPv4 with `ipconfig` → look for IPv4 Address under Wi-Fi):
+```env
+EXPO_PUBLIC_API_BASE_URL=http://192.168.x.x:5000/api/tribeX/auth/v1
+```
+
+**→ Railway:**
+```env
+EXPO_PUBLIC_API_BASE_URL=https://blues-clues-hris-backend-frontend-mobile-production.up.railway.app/api/tribeX/auth/v1
+```
+
+After editing `.env`, always restart with cache cleared:
+```bash
+npx expo start -c
+```
+
+> Your phone and your machine must be on the **same Wi-Fi network** for localhost to work.
+
+---
+
+---
+
+## Environment Variables Reference
+
+### Backend — `tribeX-hris-auth-api/.env`
+
+| Variable | Description | Required |
+|---|---|---|
+| `PORT` | Port for the API server (default: `5000`) | No |
+| `SUPABASE_URL` | Your Supabase project URL | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (admin access) | Yes |
+| `SUPABASE_ANON_KEY` | Supabase anon/public key | Yes |
+| `JWT_SECRET` | Secret used to sign JWT tokens | Yes |
+| `MAIL_USER` | Gmail address used to send system emails | Yes |
+| `MAIL_PASS` | Gmail App Password (not your real password) | Yes |
+| `APP_URL` | Frontend URL (used in email links) | Yes |
+
+> **Never commit `.env` files.** They are in `.gitignore`. Full values are in Step 2 above.
+
+---
+
+## Test Accounts
+
+Use these accounts for local development and testing.
+
+### Company 3
+
+| Role                                   | Identifier                        | Password      | Notes                         |
+| -------------------------------------- | --------------------------------- | ------------- | ----------------------------- |
+| System Admin (timekeeping/recruitment) | `afdmandrei.systemadmin`          | `andrei123`   | Full admin access — COMPANY 3 |
+| Applicant                              | `montanielandrei@gmail.com`       | `password123` | COMPANY 3                     |
+| Applicant                              | `andreimontanielcoding@gmail.com` | `password123` | Applicant portal COMPANY 3    |
+| Manager                                | `cheenamarilenejaring@gmail.com`  | `password123` | Team management               |
+| HR Officer                             | `rickgrimes`                      | `password123` | HR portal                     |
+| Employee                               | `ludovicastorti`                  | `password123` | Employee                      |
+
+### Company 2
+
+| Role       | Identifier                | Password      | Notes            |
+| ---------- | ------------------------- | ------------- | ---------------- |
+| HR Officer | `chiarraalteri@gmail.com` | `password123` | COMP 2 HR portal |
+
+> Default password for all accounts not listed above: `password123`
 
 ---
 
 ## Branch Strategy
 
 ```
-feature/<ticket>-<short-description>  →  master
+feature/<ticket>-<short-description>  →  main
 ```
 
-- **Never commit directly to `master`**
+- **Never commit directly to `main`**
 - Create a short-lived feature branch for every task
 - Keep branch names lowercase with hyphens
 
 ```bash
 # Start a new feature
-git checkout master
-git pull origin master
+git checkout main
+git pull origin main
 git checkout -b feature/t3-142-user-profile-header
 
-# Sync with master while working (do this regularly)
+# Sync with main while working (do this regularly)
 git fetch origin
-git rebase origin/master
+git rebase origin/main
 ```
 
 ---
@@ -147,7 +259,7 @@ chore: remove .claude folder from tracking
 
 ## Pull Request Requirements
 
-1. Open a PR from your `feature/*` branch to `master`
+1. Open a PR from your `feature/*` branch to `main`
 2. **At least 1 peer review approval** — self-approval is not allowed
 3. `npm run lint` must pass in both projects before requesting review
 4. Write a clear PR description:
@@ -172,7 +284,7 @@ chore: remove .claude folder from tracking
 | `npm run test:cov`   | Unit tests with coverage report |
 | `npm run test:e2e`   | End-to-end tests                |
 
-### Frontend (`frontend/manager-dashboard/`)
+### Frontend (`frontend/blues-clues-hris-frontend-web/`)
 
 | Command         | What it does               |
 | --------------- | -------------------------- |
@@ -180,6 +292,13 @@ chore: remove .claude folder from tracking
 | `npm run build` | Production build           |
 | `npm run start` | Serve the production build |
 | `npm run lint`  | Lint check                 |
+
+### Mobile (`blues-clues-hris-mobile/`)
+
+| Command             | What it does                         |
+| ------------------- | ------------------------------------ |
+| `npx expo start`    | Start Expo dev server                |
+| `npx expo start -c` | Start with cleared cache (use this!) |
 
 ---
 
@@ -201,34 +320,6 @@ Current base: `http://localhost:5000/api/tribeX/auth/v1/`
 
 ---
 
-## Test Accounts
-
-Use these accounts for local development and testing (Supabase seed data):
-
-| Role         | Email                            |
-| ------------ | -------------------------------- |
-| System Admin | `johndoedoe@gmail.com`           |
-| Admin        | `rickgrimes@gmail.com`           |
-| HR Officer   | `chiarraalteri@gmail.com`        |
-| Employee     | `ludovicastorti@gmail.com`       |
-| Manager      | `cheenamarilenejaring@gmail.com` |
-
-> Passwords: password123
-> FOR ALL USERS
-
----
-
-## Definition of Done
-
-A task is considered done only when:
-
-- Code is merged to `master` via PR with at least 1 approval
-- `npm run lint` passes in affected projects
-- No regressions introduced to existing functionality
-- Any behavior or config changes are reflected in documentation
-
----
-
 ## Testing the API Manually (Postman / curl)
 
 **Login:**
@@ -237,7 +328,7 @@ A task is considered done only when:
 POST http://localhost:5000/api/tribeX/auth/v1/login
 Content-Type: application/json
 
-{ "identifier": "johndoedoe@gmail.com", "password": "<password>" }
+{ "identifier": "afdmandrei.systemadmin", "password": "andrei123" }
 ```
 
 **Authenticated request:**
@@ -249,162 +340,13 @@ Authorization: Bearer <access_token>
 
 Full API reference: `http://localhost:5000/api/docs`
 
-● Correct. Here's why that's the right call for your setup:  
- Why NOT Supabase built-in Google Auth: - Supabase Auth manages its own auth.users table — completely separate from your user_profile table
-
-- Your system bypasses Supabase Auth entirely (you use the service role key to query your own tables directly)
-- Mixing Supabase Auth users with your custom user_profile would create two separate user stores to keep in sync — messy
-
-Why passport-google-oauth20 instead:
-
-- Fits directly into your NestJS architecture (you already have guards, services, controllers)
-- The Google callback gives you the user's email → you match it against your user_profile table yourself
-- After matching, you issue your own JWTs exactly as your current login() does — consistent token behavior across all login methods
-- Full control over what happens if the email doesn't exist (e.g., reject with a clear error instead of auto-creating an account)
-
-The flow in plain terms:
-Browser → GET /auth/google
-→ Google login page
-→ Google redirects to GET /auth/google/callback
-→ Your backend gets { email, name } from Google
-→ Lookup email in user_profile table
-→ If found → issue access_token + refresh_token (same as password login)
-→ If not found → return error "No account linked to this Google email"
-
-So yes — passport-google-oauth20 is the correct approach here. Want me to go ahead and implement it?
-
-08/03/2026
-
-Handoff: TOTP MFA Implementation
-
-Context
-
-Google OAuth is complete. The next feature is TOTP-based MFA (Google Authenticator / Authy).
-MFA is optional per user — they enable it from a settings page. Once enabled, every login
-requires a 6-digit code after the password step.
-
 ---
 
-What's Already Done
+## Definition of Done
 
-- Google OAuth employee login (GET /google, GET /google/callback)
-- Frontend callback page at src/app/auth/google/callback/page.tsx
-- rememberMe preserved across Google redirect via localStorage
+A task is considered done only when:
 
----
-
-Files to Create (Backend)
-
-- tribeX-hris-auth-api/src/auth/mfa.service.ts
-- tribeX-hris-auth-api/src/auth/mfa.controller.ts
-
-Files to Modify (Backend)
-
-- tribeX-hris-auth-api/src/auth/auth.service.ts — add mfa_required check at end of login()
-- tribeX-hris-auth-api/src/auth/auth.module.ts — register MfaService + MfaController
-
-Files to Create (Frontend)
-
-- frontend/.../src/app/(auth)/mfa/page.tsx — code entry page shown after login
-- frontend/.../src/app/(dashboard)/settings/mfa/page.tsx — setup page (QR code)
-
-Files to Modify (Frontend)
-
-- frontend/.../src/app/(auth)/login/page.tsx — handle mfa_required: true response
-
----
-
-Database Change (Supabase SQL editor)
-
-ALTER TABLE user_profile
-ADD COLUMN mfa_enabled BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN mfa_secret TEXT DEFAULT NULL;
-
----
-
-Packages to Install
-
-cd tribeX-hris-auth-api
-npm install otplib qrcode
-npm install -D @types/qrcode
-
----
-
-API Endpoints
-
-┌────────┬────────────────────┬──────────────────────────┬──────────────────────────────────────────────┐
-│ Method │ Route │ Auth │ Purpose │
-├────────┼────────────────────┼──────────────────────────┼──────────────────────────────────────────────┤
-│ POST │ /mfa/setup │ JwtAuthGuard (logged in) │ Generate secret + QR code │
-├────────┼────────────────────┼──────────────────────────┼──────────────────────────────────────────────┤
-│ POST │ /mfa/setup/confirm │ JwtAuthGuard (logged in) │ Verify first code, save mfa_enabled=true │
-├────────┼────────────────────┼──────────────────────────┼──────────────────────────────────────────────┤
-│ POST │ /mfa/verify │ None (uses mfa_token) │ Verify code during login, return real tokens │
-└────────┴────────────────────┴──────────────────────────┴──────────────────────────────────────────────┘
-
----
-
-Token Flow
-
-Login with MFA enabled
-
-POST /login
-→ password valid + mfa_enabled = true
-→ DO NOT return access_token yet
-→ return { mfa_required: true, mfa_token: "<5min JWT>" }
-
-mfa_token payload:
-{
-type: "mfa",
-sub_userid: "...",
-pending_access_token: "...", ← real access token, held hostage
-pending_refresh_token: "..." ← real refresh token, held hostage
-}
-
-POST /mfa/verify { mfa_token, code }
-→ verify TOTP code against mfa_secret in DB
-→ return { access_token, refresh_token } ← released from mfa_token
-
-MFA Setup (settings page)
-
-POST /mfa/setup → returns { qrCodeDataUrl, secret }
-(user scans QR in authenticator app)
-POST /mfa/setup/confirm → { code: "123456" }
-→ verifies code works → sets mfa_enabled=true in DB
-
----
-
-Frontend Flow
-
-Login page change
-
-After loginApi() response, check:
-if (result.mfa_required) {
-sessionStorage.setItem("mfa_token", result.mfa_token);
-router.push("/mfa");
-return;
-}
-
-/mfa page
-
-- Input for 6-digit code
-- On submit: POST /mfa/verify with { mfa_token, code }
-- On success: same setTokens + saveUserInfo + redirect as normal login
-- On fail: show error, let user retry
-
-Settings MFA setup page
-
-- Button "Enable MFA" → POST /mfa/setup → show QR code image (base64 data URL)
-- Input for first code → POST /mfa/setup/confirm
-- On success: show "MFA Enabled" confirmation
-
----
-
-Key Implementation Notes
-
-- mfa_token expires in 5 minutes — if user takes too long they go back to login
-- authenticator.verify() from otplib handles the TOTP math (30s windows)
-- mfa_secret is stored in plaintext in DB for now — can encrypt later
-- MFA setup does NOT set mfa_enabled=true until confirm step succeeds
-- Google OAuth login bypasses MFA for now (can add later)
-- Test accounts all have mfa_enabled=false by default (safe)
+- Code is merged to `main` via PR with at least 1 approval
+- `npm run lint` passes in affected projects
+- No regressions introduced to existing functionality
+- Any behavior or config changes are reflected in documentation

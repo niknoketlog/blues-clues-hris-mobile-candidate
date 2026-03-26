@@ -13,6 +13,7 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
+import { GradientHero } from "../components/GradientHero";
 import { authFetch } from "../services/auth";
 import { API_BASE_URL } from "../lib/api";
 
@@ -34,6 +35,7 @@ function formatHours(timeIn: string | null, timeOut: string | null): string {
   if (!timeIn || !timeOut) return "—";
   const diff =
     (parseTs(timeOut).getTime() - parseTs(timeIn).getTime()) / 3_600_000;
+  if (diff <= 0) return "—";
   const h = Math.floor(diff);
   const m = Math.round((diff - h) * 60);
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
@@ -41,15 +43,12 @@ function formatHours(timeIn: string | null, timeOut: string | null): string {
 
 function deriveStatus(timeIn: string | null): "Present" | "Late" | "Absent" {
   if (!timeIn) return "Absent";
-  const hour = parseInt(
-    parseTs(timeIn).toLocaleString("en-US", {
-      hour: "numeric",
-      hour12: false,
-      timeZone: "Asia/Manila",
-    }),
-    10
-  );
-  return hour >= 9 ? "Late" : "Present";
+  // Use direct UTC+8 offset arithmetic — avoids Intl API inconsistencies on Android
+  const utcMs = parseTs(timeIn).getTime();
+  const manilaMs = utcMs + 8 * 60 * 60 * 1000;
+  const hour = Math.floor((manilaMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const minute = Math.floor((manilaMs % (60 * 60 * 1000)) / (60 * 1000));
+  return hour > 9 || (hour === 9 && minute > 0) ? "Late" : "Present";
 }
 
 function todayPHT(): string {
@@ -66,13 +65,12 @@ function formatDateStr(dateStr: string): string {
   });
 }
 
-type PunchRow = {
-  log_id: string;
-  employee_id: string;
-  log_type: "time-in" | "time-out";
-  timestamp: string;
-  latitude: number | null;
-  longitude: number | null;
+// Shape returned by GET /timekeeping/my-timesheet (grouped by date)
+type GroupedDayRow = {
+  date: string;
+  time_in: { timestamp: string } | null;
+  time_out: { timestamp: string } | null;
+  all_logs: any[];
 };
 
 type DayRecord = {
@@ -116,41 +114,26 @@ export function EmployeeTimekeepingScreen() {
         return d.toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
       })();
 
+      // Backend uses "from"/"to" — not "start"/"end"
       const res = await authFetch(
-        `${API_BASE_URL}/timekeeping/my-timesheet?start=${startDate}&end=${today}`
+        `${API_BASE_URL}/timekeeping/my-timesheet?from=${startDate}&to=${today}`
       );
       if (!res.ok) throw new Error("Failed to load timesheet");
-      const punches: PunchRow[] = await res.json();
-
-      // Group punches by local date (PHT)
-      const byDate: Record<
-        string,
-        { timeIn: string | null; timeOut: string | null }
-      > = {};
-      for (const p of punches) {
-        const d = parseTs(p.timestamp).toLocaleDateString("en-CA", {
-          timeZone: "Asia/Manila",
-        });
-        if (!byDate[d]) byDate[d] = { timeIn: null, timeOut: null };
-        if (p.log_type === "time-in" && !byDate[d].timeIn)
-          byDate[d].timeIn = p.timestamp;
-        if (p.log_type === "time-out") byDate[d].timeOut = p.timestamp;
-      }
+      // Backend returns grouped records: { date, time_in, time_out, all_logs }[]
+      const grouped: GroupedDayRow[] = await res.json();
 
       // Today's punch state
-      const t = byDate[today] ?? { timeIn: null, timeOut: null };
-      setTodayIn(t.timeIn);
-      setTodayOut(t.timeOut);
+      const todayRow = grouped.find((g) => g.date === today);
+      setTodayIn(todayRow?.time_in?.timestamp ?? null);
+      setTodayOut(todayRow?.time_out?.timestamp ?? null);
 
       // Build sorted history
-      const records: DayRecord[] = Object.entries(byDate)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .map(([date, { timeIn, timeOut }]) => ({
-          date,
-          timeIn,
-          timeOut,
-          status: deriveStatus(timeIn),
-        }));
+      const records: DayRecord[] = grouped.map(({ date, time_in, time_out }) => ({
+        date,
+        timeIn: time_in?.timestamp ?? null,
+        timeOut: time_out?.timestamp ?? null,
+        status: deriveStatus(time_in?.timestamp ?? null),
+      }));
       setHistory(records);
     } catch {
       Alert.alert("Error", "Failed to load timekeeping data.");
@@ -245,11 +228,11 @@ export function EmployeeTimekeepingScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Hero Clock */}
-            <View style={styles.heroCard}>
+            <GradientHero style={styles.heroCard}>
               <Text style={styles.eyebrow}>Employee Portal</Text>
               <Text style={styles.heroTime}>{clockStr}</Text>
               <Text style={styles.heroDate}>{dateStr}</Text>
-            </View>
+            </GradientHero>
 
             {/* Today's Status */}
             <View style={styles.statusRow}>
@@ -269,6 +252,25 @@ export function EmployeeTimekeepingScreen() {
               </View>
             </View>
 
+            {/* Current Status Banner */}
+            {!loading && (todayIn || todayOut) && (
+              <View
+                style={[
+                  styles.statusBanner,
+                  todayIn && todayOut
+                    ? styles.statusBannerDone
+                    : styles.statusBannerIn,
+                ]}
+              >
+                <View style={styles.statusBannerDot} />
+                <Text style={styles.statusBannerText}>
+                  {todayIn && todayOut
+                    ? `Shift complete — clocked out at ${formatTime(todayOut)}`
+                    : `Already clocked in at ${formatTime(todayIn)} — clock out when done`}
+                </Text>
+              </View>
+            )}
+
             {/* Clock Buttons */}
             <View style={styles.buttonRow}>
               <Pressable
@@ -283,7 +285,9 @@ export function EmployeeTimekeepingScreen() {
                 {punching && canClockIn ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.punchBtnText}>Clock In</Text>
+                  <Text style={styles.punchBtnText}>
+                    {todayIn ? "Already Clocked In" : "Clock In"}
+                  </Text>
                 )}
               </Pressable>
 
@@ -299,7 +303,9 @@ export function EmployeeTimekeepingScreen() {
                 {punching && canClockOut ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.punchBtnText}>Clock Out</Text>
+                  <Text style={styles.punchBtnText}>
+                    {todayOut ? "Already Clocked Out" : "Clock Out"}
+                  </Text>
                 )}
               </Pressable>
             </View>
@@ -313,7 +319,7 @@ export function EmployeeTimekeepingScreen() {
             {loading ? (
               <ActivityIndicator
                 size="large"
-                color="#1F3F95"
+                color="#1e3a8a"
                 style={{ marginTop: 24 }}
               />
             ) : history.length === 0 ? (
@@ -396,7 +402,6 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   heroCard: {
-    backgroundColor: "#0F2D7A",
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
@@ -446,6 +451,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: "#0F172A",
+  },
+  statusBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+    gap: 10,
+  },
+  statusBannerIn: {
+    backgroundColor: "#DCFCE7",
+    borderColor: "#BBF7D0",
+  },
+  statusBannerDone: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#BFDBFE",
+  },
+  statusBannerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#16A34A",
+  },
+  statusBannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0F172A",
+    lineHeight: 18,
   },
   buttonRow: {
     flexDirection: "row",

@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
+import { GradientHero } from "../components/GradientHero";
 import { authFetch } from "../services/auth";
 import { API_BASE_URL } from "../lib/api";
 
@@ -281,19 +282,26 @@ export function ApplicantDashboardScreen() {
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.heroCard}>
+            <GradientHero style={styles.heroCard}>
               <View style={styles.heroTextWrap}>
-                <Text style={styles.heroTitle}>Applicant Portal</Text>
-                <Text style={styles.heroSubtitle}>Blue&apos;s Clues HRIS</Text>
+                <Text style={styles.heroEyebrow}>Candidate Portal</Text>
+                <Text style={styles.heroTitle}>Welcome, {session.name.split(" ")[0]}</Text>
+                <Text style={styles.heroSubtitle}>Browse jobs and track your applications below.</Text>
               </View>
-              {!isMobile && (
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarText}>
-                    {session.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-            </View>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>
+                  {session.name.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            </GradientHero>
+
+            {/* Quick nav to applications */}
+            <Pressable
+              style={styles.appsQuickLink}
+              onPress={() => navigation.replace("ApplicantApplications", { session })}
+            >
+              <Text style={styles.appsQuickLinkText}>View All My Applications →</Text>
+            </Pressable>
 
             <View style={styles.searchWrap}>
               <Ionicons
@@ -720,40 +728,60 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
   content: { padding: 16, paddingBottom: 28 },
   heroCard: {
-    backgroundColor: "#2646A3",
-    borderRadius: 0,
+    borderRadius: 20,
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    marginHorizontal: -16,
-    marginTop: -16,
-    marginBottom: 20,
+    paddingVertical: 20,
+    marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   heroTextWrap: { flex: 1 },
+  heroEyebrow: {
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
   heroTitle: {
     color: "#FFFFFF",
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "800",
     marginBottom: 4,
   },
   heroSubtitle: {
-    color: "rgba(255,255,255,0.82)",
-    fontSize: 14,
-    fontWeight: "700",
-    letterSpacing: 1,
+    color: "rgba(255,255,255,0.75)",
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18,
   },
   avatarCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: "#E5E7EB",
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
   },
-  avatarText: { color: "#2646A3", fontSize: 20, fontWeight: "800" },
+  avatarText: { color: "#FFFFFF", fontSize: 20, fontWeight: "800" },
+  appsQuickLink: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  appsQuickLinkText: {
+    color: "#1E3A8A",
+    fontSize: 13,
+    fontWeight: "700",
+  },
   searchWrap: {
     height: 52,
     borderRadius: 16,

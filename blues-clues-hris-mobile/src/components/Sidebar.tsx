@@ -45,28 +45,30 @@ export const Sidebar = ({ role, userName, email = "", activeScreen, navigation }
       if (screenName === "Dashboard") { switchTo("SystemAdminDashboard"); return; }
       if (screenName === "Users")     { switchTo("SystemAdminUsers");     return; }
       if (screenName === "Billing")   { switchTo("SystemAdminBilling");   return; }
+      if (screenName === "AuditLogs") { switchTo("SystemAdminAuditLogs"); return; }
     }
 
     if (role === "manager") {
-      if (screenName === "Dashboard" || screenName === "Timekeeping") {
-        switchTo("ManagerDashboard"); return;
-      }
+      if (screenName === "Dashboard")   { switchTo("ManagerDashboard"); return; }
+      if (screenName === "Timekeeping") { switchTo("ManagerTimekeeping"); return; }
+      if (screenName === "Team")        { switchTo("ManagerTeam");       return; }
     }
 
     if (role === "hr") {
-      if (screenName === "Dashboard")   { switchTo("HROfficerDashboard");    return; }
-      if (screenName === "Timekeeping") { switchTo("HROfficerTimekeeping");  return; }
-      if (screenName === "Recruitment") { switchTo("HROfficerRecruitment");  return; }
+      if (screenName === "Dashboard")   { switchTo("HROfficerDashboard");   return; }
+      if (screenName === "Timekeeping") { switchTo("HROfficerTimekeeping"); return; }
+      if (screenName === "Recruitment") { switchTo("HROfficerRecruitment"); return; }
     }
 
     if (role === "employee") {
-      if (screenName === "Dashboard")   { switchTo("EmployeeDashboard");     return; }
-      if (screenName === "Timekeeping") { switchTo("EmployeeTimekeeping");   return; }
+      if (screenName === "Dashboard")   { switchTo("EmployeeDashboard");   return; }
+      if (screenName === "Timekeeping") { switchTo("EmployeeTimekeeping"); return; }
     }
 
     if (role === "applicant") {
-      if (screenName === "Dashboard") { switchTo("ApplicantDashboard"); return; }
-      if (screenName === "Jobs")      { switchTo("ApplicantJobs");      return; }
+      if (screenName === "Dashboard")    { switchTo("ApplicantDashboard");    return; }
+      if (screenName === "Jobs")         { switchTo("ApplicantJobs");         return; }
+      if (screenName === "Applications") { switchTo("ApplicantApplications"); return; }
     }
   };
 
@@ -104,12 +106,8 @@ export const Sidebar = ({ role, userName, email = "", activeScreen, navigation }
         );
       case "Recruitment":
         return <Feather name="users" size={17} color={color} />;
-      case "Onboarding":
-        return <Ionicons name="clipboard-outline" size={17} color={color} />;
-      case "Compensation":
-        return <Ionicons name="wallet-outline" size={17} color={color} />;
-      case "Performance":
-        return <Ionicons name="bar-chart-outline" size={17} color={color} />;
+      case "AuditLogs":
+        return <Ionicons name="shield-checkmark-outline" size={17} color={color} />;
       case "Team":
         return <Feather name="users" size={17} color={color} />;
       case "Approvals":
@@ -239,7 +237,7 @@ export const Sidebar = ({ role, userName, email = "", activeScreen, navigation }
 const styles = StyleSheet.create({
   sidebar: {
     width: 240,
-    backgroundColor: "#1F3F95",
+    backgroundColor: "#1e3a8a",
     borderRightWidth: 1,
     borderRightColor: "rgba(255,255,255,0.08)",
   },
@@ -333,7 +331,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   bottomProfile: {
-    backgroundColor: "#18357F",
+    backgroundColor: "#172554",
     paddingHorizontal: 14,
     paddingVertical: 14,
   },

@@ -11,7 +11,7 @@ import { MailService } from '../mail/mail.service';
 import { AuditService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 
 type UserListRow = {
   user_id: string;

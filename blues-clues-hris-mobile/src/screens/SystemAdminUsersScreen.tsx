@@ -15,6 +15,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { Sidebar } from "../components/Sidebar";
 import { MobileRoleMenu } from "../components/MobileRoleMenu";
+import { GradientHero } from "../components/GradientHero";
 import { authFetch } from "../services/auth";
 import { API_BASE_URL } from "../lib/api";
 
@@ -224,13 +225,13 @@ export function SystemAdminUsersScreen() {
 
           <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             {/* Hero */}
-            <View style={[styles.heroCard, { backgroundColor: "#0F2D7A" }]}>
+            <GradientHero style={styles.heroCard}>
               <Text style={[styles.eyebrow, { color: "rgba(255,255,255,0.75)" }]}>System Admin</Text>
               <Text style={[styles.title, { color: "#FFFFFF" }]}>User Management</Text>
               <Text style={[styles.subtitle, { color: "rgba(255,255,255,0.78)" }]}>
                 Create accounts, assign HR module access, manage invite links, and control activation status.
               </Text>
-            </View>
+            </GradientHero>
 
             {/* Users Table */}
             <View style={styles.tableCard}>
