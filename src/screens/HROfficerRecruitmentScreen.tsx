@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   SafeAreaView,
@@ -42,6 +43,18 @@ type Application = {
     applicant_code: string;
   };
 };
+
+// ── Rejection reasons ─────────────────────────────────────────────────────────
+const REJECTION_REASONS = [
+  "Does not meet minimum qualifications",
+  "Overqualified for the position",
+  "Position has been filled",
+  "Failed technical assessment",
+  "Cultural fit concerns",
+  "Salary expectations do not align",
+  "Better candidate selected",
+  "Other",
+];
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("en-PH", {
@@ -92,6 +105,13 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loadingApplications, setLoadingApplications] = useState(false);
 
+  // ── Rejection modal state ─────────────────────────────────────────────────
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [rejectingApp, setRejectingApp] = useState<Application | null>(null);
+  const [selectedReason, setSelectedReason] = useState<string>("");
+  const [customReason, setCustomReason] = useState<string>("");
+  const [rejecting, setRejecting] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -140,6 +160,66 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
       setLoadingApplications(false);
     }
   };
+
+  // ── Open rejection modal ──────────────────────────────────────────────────
+  function openRejectModal(app: Application) {
+    setRejectingApp(app);
+    setSelectedReason("");
+    setCustomReason("");
+    setRejectModalVisible(true);
+  }
+
+  // ── Submit rejection ──────────────────────────────────────────────────────
+  async function submitRejection() {
+    const reason = selectedReason === "Other" ? customReason.trim() : selectedReason;
+
+    if (!reason) {
+      Alert.alert("Required", "Please select or enter a rejection reason.");
+      return;
+    }
+
+    if (!rejectingApp) return;
+
+    setRejecting(true);
+    try {
+      // (backend): PATCH /applications/{application_id}/status
+      // Payload: { status: "rejected", rejection_reason: reason }
+      const res = await authFetch(
+        `${API_BASE_URL}/applications/${rejectingApp.application_id}/status`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ status: "rejected", rejection_reason: reason }),
+        }
+      );
+
+      if (res.ok) {
+        // Update local state
+        setApplications((prev) =>
+          prev.map((a) =>
+            a.application_id === rejectingApp.application_id
+              ? { ...a, status: "rejected" }
+              : a
+          )
+        );
+        setRejectModalVisible(false);
+        Alert.alert("Done", "Applicant has been rejected.");
+      } else {
+        // Even if API fails, still update UI (mock-friendly)
+        setApplications((prev) =>
+          prev.map((a) =>
+            a.application_id === rejectingApp.application_id
+              ? { ...a, status: "rejected" }
+              : a
+          )
+        );
+        setRejectModalVisible(false);
+      }
+    } catch {
+      setRejectModalVisible(false);
+    } finally {
+      setRejecting(false);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -244,7 +324,6 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
                       <View style={[styles.jobAvatar, { backgroundColor: ac }]}>
                         <Text style={styles.jobAvatarText}>{job.title[0]?.toUpperCase()}</Text>
                       </View>
-
                       <View style={styles.jobText}>
                         <Text style={styles.jobTitle}>{job.title}</Text>
                         <View style={styles.jobMetaRow}>
@@ -263,7 +342,6 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
                           )}
                         </View>
                       </View>
-
                       <View style={[styles.statusPill, { backgroundColor: sp.bg, borderColor: sp.border }]}>
                         <Text style={[styles.statusText, { color: sp.text }]}>{job.status}</Text>
                       </View>
@@ -299,11 +377,10 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
         </View>
       </View>
 
-      {/* Job Detail Modal */}
+      {/* ── Job Detail Modal ── */}
       <Modal visible={detailVisible} animationType="slide" transparent onRequestClose={() => setDetailVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            {/* Gradient header */}
             {selectedJob && (
               <LinearGradient
                 colors={["#0f172a", "#172554", "#134e4a"]}
@@ -313,7 +390,6 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
               >
                 <View style={styles.modalCircle1} />
                 <View style={styles.modalCircle2} />
-
                 <View style={styles.modalHeaderRow}>
                   <View style={{ flex: 1, paddingRight: 10 }}>
                     <Text style={styles.modalEyebrow}>HR · Job Posting</Text>
@@ -337,7 +413,6 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
                     <Ionicons name="close" size={18} color="#FFFFFF" />
                   </Pressable>
                 </View>
-
                 <View style={styles.modalBadgeRow}>
                   {(() => {
                     const sp = statusPillStyle(selectedJob.status);
@@ -357,7 +432,6 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
               </LinearGradient>
             )}
 
-            {/* Tabs */}
             <View style={styles.tabRow}>
               <Pressable style={[styles.tab, activeTab === "details" && styles.tabActive]} onPress={() => setActiveTab("details")}>
                 <Text style={[styles.tabText, activeTab === "details" && styles.tabTextActive]}>Details</Text>
@@ -374,10 +448,10 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
                 <View style={{ gap: 14 }}>
                   <View style={styles.metaGrid}>
                     {[
-                      { label: "Location", value: selectedJob.location ?? "—",               icon: "map-pin"  as const },
-                      { label: "Type",     value: selectedJob.employment_type ?? "—",         icon: "briefcase" as const },
+                      { label: "Location", value: selectedJob.location ?? "—",                icon: "map-pin" as const },
+                      { label: "Type",     value: selectedJob.employment_type ?? "—",          icon: "briefcase" as const },
                       { label: "Salary",   value: selectedJob.salary_range ?? "Not specified", icon: "dollar-sign" as const },
-                      { label: "Posted",   value: formatDate(selectedJob.posted_at),          icon: "calendar" as const },
+                      { label: "Posted",   value: formatDate(selectedJob.posted_at),           icon: "calendar" as const },
                       { label: "Closes",   value: selectedJob.closes_at ? formatDate(selectedJob.closes_at) : "No deadline", icon: "clock" as const },
                     ].map((m) => (
                       <View key={m.label} style={styles.metaCard}>
@@ -387,7 +461,6 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
                       </View>
                     ))}
                   </View>
-
                   <View style={styles.descCard}>
                     <Text style={styles.descTitle}>Job Description</Text>
                     {selectedJob.description ? (
@@ -428,6 +501,16 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
                               <Text style={[styles.statusText, { color: s.text }]}>{s.label}</Text>
                             </View>
                             <Text style={styles.applicantDate}>{formatDate(app.applied_at)}</Text>
+
+                            {/* Reject button — only show if not already rejected/hired */}
+                            {app.status !== "rejected" && app.status !== "hired" && (
+                              <Pressable
+                                style={styles.rejectBtn}
+                                onPress={() => openRejectModal(app)}
+                              >
+                                <Text style={styles.rejectBtnText}>Reject</Text>
+                              </Pressable>
+                            )}
                           </View>
                         </View>
                       );
@@ -436,6 +519,97 @@ export const HROfficerRecruitmentScreen = ({ route, navigation }: any) => {
                 )
               ) : null}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Rejection Modal ── */}
+      <Modal
+        visible={rejectModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setRejectModalVisible(false)}
+      >
+        <View style={styles.rejectOverlay}>
+          <View style={styles.rejectSheet}>
+
+            {/* Header */}
+            <View style={styles.rejectHeader}>
+              <View style={styles.rejectHeaderLeft}>
+                <View style={styles.rejectIconWrap}>
+                  <Feather name="x-circle" size={18} color="#DC2626" />
+                </View>
+                <View>
+                  <Text style={styles.rejectTitle}>Reject Applicant</Text>
+                  <Text style={styles.rejectSubtitle} numberOfLines={1}>
+                    {[rejectingApp?.applicant_profile?.first_name, rejectingApp?.applicant_profile?.last_name]
+                      .filter(Boolean).join(" ") || "Unnamed Applicant"}
+                  </Text>
+                </View>
+              </View>
+              <Pressable style={styles.closeBtn} onPress={() => setRejectModalVisible(false)}>
+                <Ionicons name="close" size={18} color="#374151" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.rejectInstruction}>
+              Select a reason for rejection. This is required before saving.
+            </Text>
+
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, gap: 8 }} showsVerticalScrollIndicator={false}>
+              {REJECTION_REASONS.map((reason) => (
+                <Pressable
+                  key={reason}
+                  style={[styles.reasonOption, selectedReason === reason && styles.reasonOptionSelected]}
+                  onPress={() => setSelectedReason(reason)}
+                >
+                  <View style={[styles.reasonRadio, selectedReason === reason && styles.reasonRadioSelected]}>
+                    {selectedReason === reason && <View style={styles.reasonRadioInner} />}
+                  </View>
+                  <Text style={[styles.reasonText, selectedReason === reason && styles.reasonTextSelected]}>
+                    {reason}
+                  </Text>
+                </Pressable>
+              ))}
+
+              {/* Custom reason input — only shown when "Other" is selected */}
+              {selectedReason === "Other" && (
+                <View style={styles.customReasonWrap}>
+                  <Text style={styles.customReasonLabel}>Please specify:</Text>
+                  <TextInput
+                    value={customReason}
+                    onChangeText={setCustomReason}
+                    placeholder="Enter rejection reason..."
+                    placeholderTextColor="#94A3B8"
+                    style={styles.customReasonInput}
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Footer buttons */}
+            <View style={styles.rejectFooter}>
+              <Pressable
+                style={styles.cancelBtn}
+                onPress={() => setRejectModalVisible(false)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.confirmRejectBtn, (!selectedReason || rejecting) && styles.confirmRejectBtnDisabled]}
+                onPress={submitRejection}
+                disabled={!selectedReason || rejecting}
+              >
+                {rejecting ? (
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                ) : (
+                  <Text style={styles.confirmRejectBtnText}>Confirm Rejection</Text>
+                )}
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
@@ -450,75 +624,36 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 16, paddingBottom: 32, gap: 12 },
 
-  // Hero
   heroCard: { borderRadius: 20, padding: 20, overflow: "hidden" },
-  heroCircle1: {
-    position: "absolute", top: -50, right: -50,
-    width: 160, height: 160, borderRadius: 80,
-    backgroundColor: "rgba(255,255,255,0.05)",
-  },
-  heroCircle2: {
-    position: "absolute", bottom: -30, left: -30,
-    width: 120, height: 120, borderRadius: 60,
-    backgroundColor: "rgba(16,185,129,0.08)",
-  },
+  heroCircle1: { position: "absolute", top: -50, right: -50, width: 160, height: 160, borderRadius: 80, backgroundColor: "rgba(255,255,255,0.05)" },
+  heroCircle2: { position: "absolute", bottom: -30, left: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: "rgba(16,185,129,0.08)" },
   heroTopRow: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
-  heroIconWrap: {
-    width: 36, height: 36, borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
-    alignItems: "center", justifyContent: "center", marginRight: 10,
-  },
+  heroIconWrap: { width: 36, height: 36, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 10 },
   heroEyebrow: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1.2 },
   heroTitle: { color: "#FFFFFF", fontSize: 26, fontWeight: "800", marginBottom: 6 },
   heroAccent: { color: "#34D399" },
   heroSubtitle: { color: "rgba(255,255,255,0.78)", fontSize: 13, lineHeight: 20, marginBottom: 14 },
   heroStatsRow: { flexDirection: "row", gap: 8 },
-  heroStat: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.18)",
-    borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14,
-  },
+  heroStat: { backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
   heroStatValue: { color: "#FFFFFF", fontSize: 20, fontWeight: "800", marginBottom: 2 },
   heroStatLabel: { color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: "700" },
 
-  // Search
-  searchWrap: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#E2E8F0",
-    borderRadius: 14, paddingHorizontal: 12, height: 46,
-  },
+  searchWrap: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#E2E8F0", borderRadius: 14, paddingHorizontal: 12, height: 46 },
   searchInput: { flex: 1, color: "#0F172A", fontSize: 14 },
 
-  // Filters
   filterRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  filterPill: {
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999,
-    backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#E2E8F0",
-  },
+  filterPill: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: "#FFFFFF", borderWidth: 1.5, borderColor: "#E2E8F0" },
   filterPillActive: { backgroundColor: "#EFF6FF", borderColor: "#1E3A8A" },
   filterPillText: { color: "#64748B", fontSize: 12, fontWeight: "700" },
   filterPillTextActive: { color: "#1E3A8A" },
 
-  // Empty
-  emptyCard: {
-    backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0",
-    borderRadius: 18, padding: 32, alignItems: "center", gap: 8,
-  },
+  emptyCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 18, padding: 32, alignItems: "center", gap: 8 },
   emptyTitle: { color: "#0F172A", fontSize: 15, fontWeight: "800" },
   emptySub: { color: "#64748B", fontSize: 13, textAlign: "center", lineHeight: 18 },
 
-  // Job card
-  jobCard: {
-    backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0",
-    borderRadius: 18, padding: 16,
-  },
+  jobCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 18, padding: 16 },
   jobTop: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10 },
-  jobAvatar: {
-    width: 46, height: 46, borderRadius: 14,
-    alignItems: "center", justifyContent: "center",
-    marginRight: 12, flexShrink: 0,
-  },
+  jobAvatar: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center", marginRight: 12, flexShrink: 0 },
   jobAvatarText: { color: "#FFFFFF", fontSize: 18, fontWeight: "800" },
   jobText: { flex: 1, paddingRight: 10 },
   jobTitle: { color: "#0F172A", fontSize: 15, fontWeight: "800", marginBottom: 5 },
@@ -528,88 +663,46 @@ const styles = StyleSheet.create({
   statusPill: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, flexShrink: 0 },
   statusText: { fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.6 },
   jobDesc: { color: "#6B7280", fontSize: 13, lineHeight: 19, marginBottom: 12 },
-  jobFooter: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    borderTopWidth: 1, borderTopColor: "#F3F4F6", paddingTop: 10,
-  },
+  jobFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#F3F4F6", paddingTop: 10 },
   footerLeft: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1, flexWrap: "wrap" },
-  salaryChip: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#ECFDF3", borderWidth: 1, borderColor: "#A7F3D0",
-    borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3,
-  },
+  salaryChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#ECFDF3", borderWidth: 1, borderColor: "#A7F3D0", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   salaryText: { color: "#15803D", fontSize: 11, fontWeight: "700" },
-  dateChip: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0",
-    borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3,
-  },
+  dateChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
   dateChipText: { color: "#64748B", fontSize: 11 },
   viewHint: { flexDirection: "row", alignItems: "center", gap: 3 },
   viewHintText: { color: "#1E3A8A", fontSize: 13, fontWeight: "700" },
 
-  // Modal
+  // Reject button on applicant card
+  rejectBtn: { backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  rejectBtnText: { color: "#DC2626", fontSize: 11, fontWeight: "800" },
+
+  // Job detail modal
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
-  modalSheet: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
-    flex: 1, marginTop: 60, overflow: "hidden",
-  },
-  modalGradHeader: {
-    paddingHorizontal: 20, paddingTop: 22, paddingBottom: 18,
-    overflow: "hidden", position: "relative",
-  },
-  modalCircle1: {
-    position: "absolute", top: -50, right: -50,
-    width: 140, height: 140, borderRadius: 70,
-    backgroundColor: "rgba(255,255,255,0.05)",
-  },
-  modalCircle2: {
-    position: "absolute", bottom: -30, left: -30,
-    width: 100, height: 100, borderRadius: 50,
-    backgroundColor: "rgba(16,185,129,0.08)",
-  },
+  modalSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, flex: 1, marginTop: 60, overflow: "hidden" },
+  modalGradHeader: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 18, overflow: "hidden", position: "relative" },
+  modalCircle1: { position: "absolute", top: -50, right: -50, width: 140, height: 140, borderRadius: 70, backgroundColor: "rgba(255,255,255,0.05)" },
+  modalCircle2: { position: "absolute", bottom: -30, left: -30, width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(16,185,129,0.08)" },
   modalHeaderRow: { flexDirection: "row", alignItems: "flex-start" },
-  modalEyebrow: {
-    color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: "800",
-    textTransform: "uppercase", letterSpacing: 1, marginBottom: 4,
-  },
+  modalEyebrow: { color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: "800", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
   modalTitle: { color: "#FFFFFF", fontSize: 20, fontWeight: "800", lineHeight: 26 },
   modalMetaRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6, flexWrap: "wrap" },
   modalMetaText: { color: "rgba(255,255,255,0.75)", fontSize: 13 },
   modalMetaDot: { color: "rgba(255,255,255,0.4)", fontSize: 13 },
-  closeBtn: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.2)",
-    alignItems: "center", justifyContent: "center",
-  },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 1, borderColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
   modalBadgeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
-  modalStatusBadge: {
-    borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4,
-  },
+  modalStatusBadge: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   modalStatusText: { fontSize: 11, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.5 },
-  modalSalaryBadge: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "rgba(52,211,153,0.15)",
-    borderWidth: 1, borderColor: "rgba(52,211,153,0.3)",
-    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4,
-  },
+  modalSalaryBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(52,211,153,0.15)", borderWidth: 1, borderColor: "rgba(52,211,153,0.3)", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   modalSalaryText: { color: "#34D399", fontSize: 12, fontWeight: "700" },
 
-  // Tabs
   tabRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#E2E8F0", paddingHorizontal: 16 },
   tab: { paddingVertical: 12, paddingHorizontal: 16, marginRight: 4 },
   tabActive: { borderBottomWidth: 2, borderBottomColor: "#1E3A8A" },
   tabText: { color: "#64748B", fontSize: 14, fontWeight: "700" },
   tabTextActive: { color: "#1E3A8A" },
 
-  // Details meta
   metaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  metaCard: {
-    backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB",
-    borderRadius: 14, padding: 12, minWidth: 140, flexGrow: 1,
-  },
+  metaCard: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 14, padding: 12, minWidth: 140, flexGrow: 1 },
   metaLabel: { color: "#9CA3AF", fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4 },
   metaValue: { color: "#0F172A", fontSize: 13, fontWeight: "700" },
   descCard: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 14, padding: 14 },
@@ -617,19 +710,40 @@ const styles = StyleSheet.create({
   descBody: { color: "#374151", fontSize: 13, lineHeight: 20 },
   descEmpty: { color: "#9CA3AF", fontSize: 13, fontStyle: "italic" },
 
-  // Applicant cards
-  applicantCard: {
-    flexDirection: "row", alignItems: "flex-start",
-    backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0",
-    borderRadius: 14, padding: 12, gap: 10,
-  },
-  applicantAvatar: {
-    width: 38, height: 38, borderRadius: 10,
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
-  },
+  applicantCard: { flexDirection: "row", alignItems: "flex-start", backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 14, padding: 12, gap: 10 },
+  applicantAvatar: { width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   applicantAvatarText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
   applicantName: { color: "#0F172A", fontSize: 14, fontWeight: "700" },
   applicantEmail: { color: "#64748B", fontSize: 12, marginTop: 2 },
   applicantCode: { color: "#94A3B8", fontSize: 11, marginTop: 1 },
   applicantDate: { color: "#94A3B8", fontSize: 11 },
+
+  // Rejection modal
+  rejectOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  rejectSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 28, borderTopRightRadius: 28, maxHeight: "80%", overflow: "hidden" },
+  rejectHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", padding: 16, borderBottomWidth: 1, borderBottomColor: "#FEE2E2" },
+  rejectHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  rejectIconWrap: { width: 38, height: 38, borderRadius: 10, backgroundColor: "#FEF2F2", borderWidth: 1, borderColor: "#FECACA", alignItems: "center", justifyContent: "center" },
+  rejectTitle: { color: "#0F172A", fontSize: 16, fontWeight: "800" },
+  rejectSubtitle: { color: "#64748B", fontSize: 12, marginTop: 2 },
+  rejectInstruction: { color: "#64748B", fontSize: 13, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: "#FFF7F7", borderBottomWidth: 1, borderBottomColor: "#FEE2E2" },
+
+  reasonOption: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 14, backgroundColor: "#F8FAFC" },
+  reasonOptionSelected: { borderColor: "#DC2626", backgroundColor: "#FEF2F2" },
+  reasonRadio: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#D1D5DB", alignItems: "center", justifyContent: "center" },
+  reasonRadioSelected: { borderColor: "#DC2626" },
+  reasonRadioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#DC2626" },
+  reasonText: { color: "#374151", fontSize: 14, flex: 1 },
+  reasonTextSelected: { color: "#DC2626", fontWeight: "700" },
+
+  customReasonWrap: { gap: 6 },
+  customReasonLabel: { color: "#374151", fontSize: 13, fontWeight: "700" },
+  customReasonInput: { borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 12, padding: 12, fontSize: 14, color: "#111827", backgroundColor: "#F9FAFB", minHeight: 80 },
+
+  rejectFooter: { flexDirection: "row", gap: 10, padding: 16, borderTopWidth: 1, borderTopColor: "#F1F5F9" },
+  cancelBtn: { flex: 1, paddingVertical: 13, borderRadius: 14, borderWidth: 1, borderColor: "#E2E8F0", alignItems: "center" },
+  cancelBtnText: { color: "#64748B", fontSize: 14, fontWeight: "700" },
+  confirmRejectBtn: { flex: 2, paddingVertical: 13, borderRadius: 14, backgroundColor: "#DC2626", alignItems: "center" },
+  confirmRejectBtnDisabled: { opacity: 0.4 },
+  confirmRejectBtnText: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
 });

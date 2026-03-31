@@ -126,9 +126,7 @@ export function ApplicantDashboardScreen() {
         if (!cancelled) setLoadingJobs(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -154,9 +152,7 @@ export function ApplicantDashboardScreen() {
         if (!cancelled) setLoadingApps(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   const filteredJobs = useMemo(() => {
@@ -236,6 +232,16 @@ export function ApplicantDashboardScreen() {
         { method: "POST", body: JSON.stringify(body) }
       );
 
+      // ── 409 Duplicate Application ─────────────────────────────────────────
+      if (res.status === 409) {
+        Alert.alert(
+          "Already Applied",
+          "You have already submitted an application for this role.",
+          [{ text: "OK", style: "default" }]
+        );
+        return;
+      }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error((err as any)?.message || "Failed to submit application");
@@ -247,7 +253,16 @@ export function ApplicantDashboardScreen() {
         `Your application for "${selectedJob.title}" has been submitted successfully.`
       );
     } catch (e: any) {
-      Alert.alert("Error", e?.message || "Something went wrong.");
+      // Guard against re-showing error if already handled (409 case)
+      if (e?.message?.toLowerCase().includes("already")) {
+        Alert.alert(
+          "Already Applied",
+          "You have already submitted an application for this role.",
+          [{ text: "OK", style: "default" }]
+        );
+      } else {
+        Alert.alert("Error", e?.message || "Something went wrong.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -399,10 +414,7 @@ export function ApplicantDashboardScreen() {
               </Text>
 
               {loadingJobs ? (
-                <ActivityIndicator
-                  color="#3366E8"
-                  style={{ marginVertical: 20 }}
-                />
+                <ActivityIndicator color="#3366E8" style={{ marginVertical: 20 }} />
               ) : filteredJobs.length === 0 ? (
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyTitle}>
@@ -437,14 +449,8 @@ export function ApplicantDashboardScreen() {
                       </View>
                     </View>
                     <View style={styles.tapHint}>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={14}
-                        color="#3366E8"
-                      />
-                      <Text style={styles.tapHintText}>
-                        Tap to view &amp; apply
-                      </Text>
+                      <Ionicons name="chevron-forward" size={14} color="#3366E8" />
+                      <Text style={styles.tapHintText}>Tap to view &amp; apply</Text>
                     </View>
                   </Pressable>
                 ))
@@ -463,7 +469,6 @@ export function ApplicantDashboardScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
-            {/* Header */}
             <View style={styles.modalHeader}>
               <View style={{ flex: 1, paddingRight: 10 }}>
                 <Text style={styles.modalTitle} numberOfLines={2}>
@@ -475,26 +480,17 @@ export function ApplicantDashboardScreen() {
                   </Text>
                 )}
               </View>
-              <Pressable
-                style={styles.closeBtn}
-                onPress={() => setApplyVisible(false)}
-              >
+              <Pressable style={styles.closeBtn} onPress={() => setApplyVisible(false)}>
                 <Ionicons name="close" size={18} color="#374151" />
               </Pressable>
             </View>
 
-            {/* Tabs */}
             <View style={styles.tabRow}>
               <Pressable
                 style={[styles.tab, applyTab === "details" && styles.tabActive]}
                 onPress={() => setApplyTab("details")}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    applyTab === "details" && styles.tabTextActive,
-                  ]}
-                >
+                <Text style={[styles.tabText, applyTab === "details" && styles.tabTextActive]}>
                   Details
                 </Text>
               </Pressable>
@@ -502,12 +498,7 @@ export function ApplicantDashboardScreen() {
                 style={[styles.tab, applyTab === "apply" && styles.tabActive]}
                 onPress={() => setApplyTab("apply")}
               >
-                <Text
-                  style={[
-                    styles.tabText,
-                    applyTab === "apply" && styles.tabTextActive,
-                  ]}
-                >
+                <Text style={[styles.tabText, applyTab === "apply" && styles.tabTextActive]}>
                   Apply
                 </Text>
               </Pressable>
@@ -521,16 +512,12 @@ export function ApplicantDashboardScreen() {
             >
               {applyTab === "details" && selectedJob ? (
                 <View style={{ gap: 14 }}>
-                  {/* Meta cards */}
                   <View style={styles.metaGrid}>
                     {[
                       { label: "Location", value: selectedJob.location || "—" },
-                      { label: "Type", value: selectedJob.type || "—" },
-                      {
-                        label: "Salary",
-                        value: selectedJob.salary_range || "—",
-                      },
-                      { label: "Posted", value: selectedJob.posted || "—" },
+                      { label: "Type",     value: selectedJob.type || "—" },
+                      { label: "Salary",   value: selectedJob.salary_range || "—" },
+                      { label: "Posted",   value: selectedJob.posted || "—" },
                     ].map((m) => (
                       <View key={m.label} style={styles.metaCard}>
                         <Text style={styles.metaLabel}>{m.label}</Text>
@@ -539,37 +526,24 @@ export function ApplicantDashboardScreen() {
                     ))}
                   </View>
 
-                  {/* Description */}
                   <View style={styles.descCard}>
                     <Text style={styles.descTitle}>About this role</Text>
                     {selectedJob.description ? (
-                      <Text style={styles.descBody}>
-                        {selectedJob.description}
-                      </Text>
+                      <Text style={styles.descBody}>{selectedJob.description}</Text>
                     ) : (
-                      <Text style={styles.descEmpty}>
-                        No description provided.
-                      </Text>
+                      <Text style={styles.descEmpty}>No description provided.</Text>
                     )}
                   </View>
 
-                  {/* CTA */}
-                  <Pressable
-                    style={styles.applyButton}
-                    onPress={() => setApplyTab("apply")}
-                  >
-                    <Text style={styles.applyButtonText}>
-                      Apply for this Position →
-                    </Text>
+                  <Pressable style={styles.applyButton} onPress={() => setApplyTab("apply")}>
+                    <Text style={styles.applyButtonText}>Apply for this Position →</Text>
                   </Pressable>
                 </View>
               ) : applyTab === "apply" && selectedJob ? (
                 <View style={{ gap: 16 }}>
                   <View style={styles.formHeader}>
                     <Text style={styles.formTitle}>Application Form</Text>
-                    <Text style={styles.formSubtitle}>
-                      {selectedJob.title}
-                    </Text>
+                    <Text style={styles.formSubtitle}>{selectedJob.title}</Text>
                   </View>
 
                   {loadingQuestions ? (
@@ -582,12 +556,9 @@ export function ApplicantDashboardScreen() {
                         color="#3366E8"
                         style={{ marginBottom: 8 }}
                       />
-                      <Text style={styles.noQuestionsTitle}>
-                        No additional questions
-                      </Text>
+                      <Text style={styles.noQuestionsTitle}>No additional questions</Text>
                       <Text style={styles.noQuestionsText}>
-                        This job has no form questions. You can submit your
-                        application right away.
+                        This job has no form questions. You can submit your application right away.
                       </Text>
                     </View>
                   ) : (
@@ -595,9 +566,7 @@ export function ApplicantDashboardScreen() {
                       <View key={q.question_id} style={styles.questionCard}>
                         <Text style={styles.questionLabel}>
                           {idx + 1}. {q.question_text}
-                          {q.is_required && (
-                            <Text style={styles.requiredAsterix}> *</Text>
-                          )}
+                          {q.is_required && <Text style={styles.requiredAsterix}> *</Text>}
                         </Text>
 
                         {q.question_type === "text" && (
@@ -615,79 +584,34 @@ export function ApplicantDashboardScreen() {
 
                         {q.question_type === "multiple_choice" &&
                           (q.options ?? []).map((opt, oidx) => {
-                            const selected =
-                              answers[q.question_id] === opt;
+                            const selected = answers[q.question_id] === opt;
                             return (
                               <Pressable
                                 key={`${q.question_id}-opt-${oidx}`}
-                                style={[
-                                  styles.radioOption,
-                                  selected && styles.radioOptionSelected,
-                                ]}
+                                style={[styles.radioOption, selected && styles.radioOptionSelected]}
                                 onPress={() => setAnswer(q.question_id, opt)}
                               >
-                                <View
-                                  style={[
-                                    styles.radioCircle,
-                                    selected && styles.radioCircleSelected,
-                                  ]}
-                                >
-                                  {selected && (
-                                    <View style={styles.radioInner} />
-                                  )}
+                                <View style={[styles.radioCircle, selected && styles.radioCircleSelected]}>
+                                  {selected && <View style={styles.radioInner} />}
                                 </View>
-                                <Text
-                                  style={[
-                                    styles.optionText,
-                                    selected && styles.optionTextSelected,
-                                  ]}
-                                >
-                                  {opt}
-                                </Text>
+                                <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{opt}</Text>
                               </Pressable>
                             );
                           })}
 
                         {q.question_type === "checkbox" &&
                           (q.options ?? []).map((opt, oidx) => {
-                            const checked = (
-                              answers[q.question_id] ?? ""
-                            )
-                              .split(",")
-                              .includes(opt);
+                            const checked = (answers[q.question_id] ?? "").split(",").includes(opt);
                             return (
                               <Pressable
                                 key={`${q.question_id}-chk-${oidx}`}
-                                style={[
-                                  styles.radioOption,
-                                  checked && styles.radioOptionSelected,
-                                ]}
-                                onPress={() =>
-                                  toggleCheckbox(q.question_id, opt)
-                                }
+                                style={[styles.radioOption, checked && styles.radioOptionSelected]}
+                                onPress={() => toggleCheckbox(q.question_id, opt)}
                               >
-                                <View
-                                  style={[
-                                    styles.checkBox,
-                                    checked && styles.checkBoxSelected,
-                                  ]}
-                                >
-                                  {checked && (
-                                    <Ionicons
-                                      name="checkmark"
-                                      size={12}
-                                      color="#FFFFFF"
-                                    />
-                                  )}
+                                <View style={[styles.checkBox, checked && styles.checkBoxSelected]}>
+                                  {checked && <Ionicons name="checkmark" size={12} color="#FFFFFF" />}
                                 </View>
-                                <Text
-                                  style={[
-                                    styles.optionText,
-                                    checked && styles.optionTextSelected,
-                                  ]}
-                                >
-                                  {opt}
-                                </Text>
+                                <Text style={[styles.optionText, checked && styles.optionTextSelected]}>{opt}</Text>
                               </Pressable>
                             );
                           })}
@@ -696,21 +620,15 @@ export function ApplicantDashboardScreen() {
                   )}
 
                   <Pressable
-                    style={[
-                      styles.submitBtn,
-                      submitting && styles.submitBtnDisabled,
-                    ]}
+                    style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
                     onPress={handleSubmit}
                     disabled={submitting}
                   >
                     {submitting ? (
                       <ActivityIndicator color="#FFFFFF" size="small" />
                     ) : (
-                      <Text style={styles.submitBtnText}>
-                        Submit Application
-                      </Text>
+                      <Text style={styles.submitBtnText}>Submit Application</Text>
                     )}
-
                   </Pressable>
                 </View>
               ) : null}
@@ -728,465 +646,92 @@ const styles = StyleSheet.create({
   mainContent: { flex: 1, backgroundColor: "#F3F4F6" },
   container: { flex: 1, backgroundColor: "#F3F4F6" },
   content: { padding: 16, paddingBottom: 28 },
-  heroCard: {
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    marginBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
+  heroCard: { borderRadius: 20, paddingHorizontal: 20, paddingVertical: 20, marginBottom: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   heroTextWrap: { flex: 1 },
-  heroEyebrow: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  heroTitle: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  heroSubtitle: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 13,
-    fontWeight: "500",
-    lineHeight: 18,
-  },
-  avatarCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
-  },
+  heroEyebrow: { color: "rgba(255,255,255,0.65)", fontSize: 11, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 },
+  heroTitle: { color: "#FFFFFF", fontSize: 22, fontWeight: "800", marginBottom: 4 },
+  heroSubtitle: { color: "rgba(255,255,255,0.75)", fontSize: 13, fontWeight: "500", lineHeight: 18 },
+  avatarCircle: { width: 52, height: 52, borderRadius: 26, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center", marginLeft: 16, borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
   avatarText: { color: "#FFFFFF", fontSize: 20, fontWeight: "800" },
-  appsQuickLink: {
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#BFDBFE",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  appsQuickLinkText: {
-    color: "#1E3A8A",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  searchWrap: {
-    height: 52,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#D1D5DB",
-    backgroundColor: "#FFFFFF",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    marginBottom: 16,
-  },
+  appsQuickLink: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#BFDBFE", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12 },
+  appsQuickLinkText: { color: "#1E3A8A", fontSize: 13, fontWeight: "700" },
+  searchWrap: { height: 52, borderRadius: 16, borderWidth: 1.5, borderColor: "#D1D5DB", backgroundColor: "#FFFFFF", flexDirection: "row", alignItems: "center", paddingHorizontal: 14, marginBottom: 16 },
   searchIcon: { marginRight: 10 },
   searchInput: { flex: 1, fontSize: 15, color: "#111827" },
-  sectionCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    padding: 16,
-    marginBottom: 14,
-  },
-  sectionEyebrow: {
-    color: "#3366D6",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 10,
-  },
-  currentStatus: {
-    color: "#0F172A",
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
-  currentRole: {
-    color: "#6B7280",
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 14,
-  },
-  phasePill: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#EEF4FF",
-    borderWidth: 1,
-    borderColor: "#BFD4FF",
-  },
+  sectionCard: { backgroundColor: "#FFFFFF", borderRadius: 20, borderWidth: 1, borderColor: "#E5E7EB", padding: 16, marginBottom: 14 },
+  sectionEyebrow: { color: "#3366D6", fontSize: 11, fontWeight: "800", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 },
+  currentStatus: { color: "#0F172A", fontSize: 22, fontWeight: "800", marginBottom: 8 },
+  currentRole: { color: "#6B7280", fontSize: 15, lineHeight: 22, marginBottom: 14 },
+  phasePill: { alignSelf: "flex-start", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: "#EEF4FF", borderWidth: 1, borderColor: "#BFD4FF" },
   phasePillText: { color: "#3366D6", fontSize: 13, fontWeight: "700" },
-  sectionTitle: {
-    color: "#0F172A",
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 16,
-  },
-  progressLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  progressLabelActive: {
-    color: "#3366D6",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    flex: 1,
-    textAlign: "center",
-  },
-  progressLabelMuted: {
-    color: "#9CA3AF",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    flex: 1,
-    textAlign: "center",
-  },
+  sectionTitle: { color: "#0F172A", fontSize: 18, fontWeight: "800", marginBottom: 16 },
+  progressLabels: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
+  progressLabelActive: { color: "#3366D6", fontSize: 10, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase", flex: 1, textAlign: "center" },
+  progressLabelMuted: { color: "#9CA3AF", fontSize: 10, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase", flex: 1, textAlign: "center" },
   progressRow: { flexDirection: "row", alignItems: "center" },
-  progressStepDone: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#3366E8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  progressStepCurrent: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 3,
-    borderColor: "#3366E8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  progressStepCurrentText: {
-    color: "#3366E8",
-    fontSize: 15,
-    fontWeight: "800",
-  },
-  progressStepMuted: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F9FAFB",
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  progressStepDone: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#3366E8", alignItems: "center", justifyContent: "center" },
+  progressStepCurrent: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#FFFFFF", borderWidth: 3, borderColor: "#3366E8", alignItems: "center", justifyContent: "center" },
+  progressStepCurrentText: { color: "#3366E8", fontSize: 15, fontWeight: "800" },
+  progressStepMuted: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F9FAFB", borderWidth: 2, borderColor: "#D1D5DB", alignItems: "center", justifyContent: "center" },
   progressStepMutedText: { color: "#9CA3AF", fontSize: 15, fontWeight: "800" },
   progressLineActive: { flex: 1, height: 4, backgroundColor: "#3366E8" },
   progressLineMuted: { flex: 1, height: 4, backgroundColor: "#D1D5DB" },
-  positionsCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    padding: 16,
-  },
-  positionsSubtitle: {
-    color: "#6B7280",
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-    marginTop: -8,
-  },
-  jobCard: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
-  },
-  jobTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
+  positionsCard: { backgroundColor: "#FFFFFF", borderRadius: 20, borderWidth: 1, borderColor: "#E5E7EB", padding: 16 },
+  positionsSubtitle: { color: "#6B7280", fontSize: 14, lineHeight: 20, marginBottom: 16, marginTop: -8 },
+  jobCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 18, padding: 16, marginBottom: 14 },
+  jobTopRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 },
   jobTextWrap: { flex: 1, paddingRight: 10 },
-  jobTitle: {
-    color: "#0F172A",
-    fontSize: 16,
-    fontWeight: "800",
-    marginBottom: 6,
-  },
+  jobTitle: { color: "#0F172A", fontSize: 16, fontWeight: "800", marginBottom: 6 },
   jobMeta: { color: "#6B7280", fontSize: 13, lineHeight: 20, marginBottom: 2 },
   jobPosted: { color: "#9CA3AF", fontSize: 12 },
-  jobTypePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
-  },
+  jobTypePill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: "#E5E7EB", backgroundColor: "#F9FAFB" },
   jobTypeText: { color: "#374151", fontSize: 12, fontWeight: "700" },
-  tapHint: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 10,
-  },
+  tapHint: { flexDirection: "row", alignItems: "center", gap: 4, borderTopWidth: 1, borderTopColor: "#E5E7EB", paddingTop: 10 },
   tapHintText: { color: "#3366E8", fontSize: 12, fontWeight: "700" },
-  applyButton: {
-    backgroundColor: "#3366E8",
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: "center",
-  },
+  applyButton: { backgroundColor: "#3366E8", paddingVertical: 14, borderRadius: 16, alignItems: "center" },
   applyButtonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
-  emptyCard: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-  },
-  emptyTitle: {
-    color: "#0F172A",
-    fontSize: 15,
-    fontWeight: "800",
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    color: "#6B7280",
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-  modalSheet: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "92%",
-    flex: 1,
-    marginTop: 60,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  modalTitle: {
-    color: "#0F172A",
-    fontSize: 18,
-    fontWeight: "800",
-  },
-  modalMeta: {
-    color: "#6B7280",
-    fontSize: 13,
-    marginTop: 4,
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F3F4F6",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingHorizontal: 16,
-  },
-  tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 4,
-  },
-  tabActive: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#3366E8",
-  },
+  emptyCard: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 16, padding: 20, alignItems: "center" },
+  emptyTitle: { color: "#0F172A", fontSize: 15, fontWeight: "800", marginBottom: 6 },
+  emptySubtitle: { color: "#6B7280", fontSize: 13, textAlign: "center", lineHeight: 20 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  modalSheet: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: "92%", flex: 1, marginTop: 60 },
+  modalHeader: { flexDirection: "row", alignItems: "flex-start", padding: 16, borderBottomWidth: 1, borderBottomColor: "#E5E7EB" },
+  modalTitle: { color: "#0F172A", fontSize: 18, fontWeight: "800" },
+  modalMeta: { color: "#6B7280", fontSize: 13, marginTop: 4 },
+  closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: "#F3F4F6", borderWidth: 1, borderColor: "#E5E7EB", alignItems: "center", justifyContent: "center" },
+  tabRow: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "#E5E7EB", paddingHorizontal: 16 },
+  tab: { paddingVertical: 12, paddingHorizontal: 16, marginRight: 4 },
+  tabActive: { borderBottomWidth: 2, borderBottomColor: "#3366E8" },
   tabText: { color: "#6B7280", fontSize: 14, fontWeight: "700" },
   tabTextActive: { color: "#3366E8" },
-  metaGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  metaCard: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 14,
-    padding: 12,
-    minWidth: 140,
-    flexGrow: 1,
-  },
-  metaLabel: {
-    color: "#9CA3AF",
-    fontSize: 10,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
+  metaGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  metaCard: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 14, padding: 12, minWidth: 140, flexGrow: 1 },
+  metaLabel: { color: "#9CA3AF", fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4 },
   metaValue: { color: "#0F172A", fontSize: 13, fontWeight: "700" },
-  descCard: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 14,
-    padding: 14,
-  },
-  descTitle: {
-    color: "#0F172A",
-    fontSize: 14,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
+  descCard: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 14, padding: 14 },
+  descTitle: { color: "#0F172A", fontSize: 14, fontWeight: "800", marginBottom: 8 },
   descBody: { color: "#374151", fontSize: 13, lineHeight: 20 },
-  descEmpty: {
-    color: "#9CA3AF",
-    fontSize: 13,
-    fontStyle: "italic",
-  },
-  // Apply form
-  formHeader: {
-    backgroundColor: "#EEF4FF",
-    borderWidth: 1,
-    borderColor: "#BFD4FF",
-    borderRadius: 14,
-    padding: 14,
-  },
+  descEmpty: { color: "#9CA3AF", fontSize: 13, fontStyle: "italic" },
+  formHeader: { backgroundColor: "#EEF4FF", borderWidth: 1, borderColor: "#BFD4FF", borderRadius: 14, padding: 14 },
   formTitle: { color: "#1D4ED8", fontSize: 15, fontWeight: "800" },
   formSubtitle: { color: "#3366D6", fontSize: 13, marginTop: 2 },
-  noQuestionsCard: {
-    backgroundColor: "#EEF4FF",
-    borderWidth: 1,
-    borderColor: "#BFD4FF",
-    borderRadius: 16,
-    padding: 20,
-    alignItems: "center",
-  },
-  noQuestionsTitle: {
-    color: "#1D4ED8",
-    fontSize: 15,
-    fontWeight: "800",
-    marginBottom: 6,
-  },
-  noQuestionsText: {
-    color: "#3366D6",
-    fontSize: 13,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  questionCard: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 14,
-    padding: 14,
-    gap: 10,
-  },
-  questionLabel: {
-    color: "#0F172A",
-    fontSize: 14,
-    fontWeight: "700",
-    lineHeight: 20,
-  },
+  noQuestionsCard: { backgroundColor: "#EEF4FF", borderWidth: 1, borderColor: "#BFD4FF", borderRadius: 16, padding: 20, alignItems: "center" },
+  noQuestionsTitle: { color: "#1D4ED8", fontSize: 15, fontWeight: "800", marginBottom: 6 },
+  noQuestionsText: { color: "#3366D6", fontSize: 13, textAlign: "center", lineHeight: 20 },
+  questionCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 14, padding: 14, gap: 10 },
+  questionLabel: { color: "#0F172A", fontSize: 14, fontWeight: "700", lineHeight: 20 },
   requiredAsterix: { color: "#DC2626" },
-  textAnswer: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 14,
-    color: "#111827",
-    backgroundColor: "#F9FAFB",
-    minHeight: 80,
-  },
-  radioOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 12,
-    gap: 10,
-  },
-  radioOptionSelected: {
-    borderColor: "#3366E8",
-    backgroundColor: "#EEF4FF",
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  textAnswer: { borderWidth: 1, borderColor: "#D1D5DB", borderRadius: 12, padding: 12, fontSize: 14, color: "#111827", backgroundColor: "#F9FAFB", minHeight: 80 },
+  radioOption: { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 12, gap: 10 },
+  radioOptionSelected: { borderColor: "#3366E8", backgroundColor: "#EEF4FF" },
+  radioCircle: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: "#D1D5DB", alignItems: "center", justifyContent: "center" },
   radioCircleSelected: { borderColor: "#3366E8" },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#3366E8",
-  },
-  checkBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  checkBoxSelected: {
-    borderColor: "#3366E8",
-    backgroundColor: "#3366E8",
-  },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#3366E8" },
+  checkBox: { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: "#D1D5DB", alignItems: "center", justifyContent: "center" },
+  checkBoxSelected: { borderColor: "#3366E8", backgroundColor: "#3366E8" },
   optionText: { color: "#374151", fontSize: 14, flex: 1 },
   optionTextSelected: { color: "#1D4ED8", fontWeight: "700" },
-  submitBtn: {
-    backgroundColor: "#3366E8",
-    paddingVertical: 16,
-    borderRadius: 16,
-    alignItems: "center",
-  },
+  submitBtn: { backgroundColor: "#3366E8", paddingVertical: 16, borderRadius: 16, alignItems: "center" },
   submitBtnDisabled: { opacity: 0.5 },
   submitBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
 });

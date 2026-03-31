@@ -195,6 +195,17 @@ export function SystemAdminDashboardScreen() {
                     Review plan details, seat usage, and subscription status.
                   </Text>
                 </Pressable>
+
+                {/* Candidate Evaluation */}
+                <Pressable
+                  style={({ pressed }) => [styles.quickActionCard, styles.quickActionCardHighlight, pressed && { opacity: 0.75 }]}
+                  onPress={() => navigation.navigate("HROfficerCandidateEvaluation", { session })}
+                >
+                  <Text style={styles.quickActionTitle}>Candidate Evaluation →</Text>
+                  <Text style={styles.quickActionText}>
+                    View SFIA-ranked candidates and manage manual rankings per job posting.
+                  </Text>
+                </Pressable>
               </View>
             </View>
           </ScrollView>
@@ -368,6 +379,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     marginRight: 12,
     marginBottom: 12,
+  },
+  quickActionCardHighlight: {
+    backgroundColor: "#EFF6FF",
+    borderColor: "#BFDBFE",
   },
   quickActionTitle: {
     fontSize: 16,
