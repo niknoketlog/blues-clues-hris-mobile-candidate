@@ -22,6 +22,12 @@ import { SystemAdminAuditLogsScreen } from "../screens/SystemAdminAuditLogsScree
 import { EmployeeTimekeepingScreen } from "../screens/EmployeeTimekeepingScreen";
 import { HROfficerCandidateEvaluationScreen } from "../screens/HROfficerCandidateEvaluationScreen";
 
+import { EmployeeProfileScreen } from "../screens/EmployeeProfileScreen";
+import { EmployeeLeaveScreen } from "../screens/EmployeeLeaveScreen";
+import { EmployeePayslipScreen } from "../screens/EmployeePayslipScreen";
+import { HROfficerApprovalInboxScreen } from "../screens/HROfficerApprovalInboxScreen";
+import { HROfficerPayrollScreen } from "../screens/HROfficerPayrollScreen";
+
 type SessionParam = { session: { name: string; role: string; email: string } };
 
 export type RootStackParamList = {
@@ -54,6 +60,12 @@ export type RootStackParamList = {
   SystemAdminUsers: SessionParam;
   SystemAdminBilling: SessionParam;
   SystemAdminAuditLogs: SessionParam;
+
+  EmployeeProfile: SessionParam;
+  EmployeeLeave: SessionParam;
+  EmployeePayslip: SessionParam;
+  HROfficerApprovalInbox: SessionParam;
+  HROfficerPayroll: SessionParam;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -99,6 +111,11 @@ export function AppNavigator() {
         {/* HR Officer - Candidate Evaluation */}
         <Stack.Screen name="HROfficerCandidateEvaluation" component={HROfficerCandidateEvaluationScreen} />
 
+        <Stack.Screen name="EmployeeProfile" component={EmployeeProfileScreen} />
+        <Stack.Screen name="EmployeeLeave" component={EmployeeLeaveScreen} />
+        <Stack.Screen name="EmployeePayslip" component={EmployeePayslipScreen} />
+        <Stack.Screen name="HROfficerApprovalInbox" component={HROfficerApprovalInboxScreen} />
+        <Stack.Screen name="HROfficerPayroll" component={HROfficerPayrollScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
